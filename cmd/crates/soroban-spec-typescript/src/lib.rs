@@ -59,7 +59,26 @@ pub fn generate_from_wasm(wasm: &[u8]) -> Result<String, FromWasmError> {
     Ok(json)
 }
 
-fn generate_class(fns: &[Entry], spec: &[ScSpecEntry]) -> String {
+fn generate_class(
+    fns: &[Entry],
+    constructor_args: Option<Vec<types::FunctionInput>>,
+    spec: &[ScSpecEntry],
+) -> String {
+    let (constructor_args_in, constructor_args_out) = if let Some(inputs) = constructor_args {
+        let Some((args, arg_types)) = args_to_ts(&inputs) else {
+            panic!("inputs is present but couldn't be parsed by args_to_ts()");
+        };
+        (
+            format!(
+                "
+        /** Constructor/Initialization Args for the contract's `__constructor` method */
+        {args}: {arg_types},",
+            ),
+            args,
+        )
+    } else {
+        (String::new(), "null".to_string())
+    };
     let method_types = fns.iter().map(entry_to_method_type).join("");
     let from_jsons = fns
         .iter()
@@ -74,6 +93,20 @@ fn generate_class(fns: &[Entry], spec: &[ScSpecEntry]) -> String {
         r#"export interface Client {{{method_types}
 }}
 export class Client extends ContractClient {{
+  static async deploy<T = Client>({constructor_args_in}
+    /** Options for initalizing a Client as well as for calling a method, with extras specific to deploying. */
+    options: MethodOptions &
+      Omit<ContractClientOptions, "contractId"> & {{
+        /** The hash of the Wasm blob, which must already be installed on-chain. */
+        wasmHash: Buffer | string;
+        /** Salt used to generate the contract's ID. Passed through to {{@link Operation.createCustomContract}}. Default: random. */
+        salt?: Buffer | Uint8Array;
+        /** The format used to decode `wasmHash`, if it's provided as a string. */
+        format?: "hex" | "base64";
+      }}
+  ): Promise<AssembledTransaction<T>> {{
+    return ContractClient.deploy({constructor_args_out}, options)
+  }}
   constructor(public readonly options: ContractClientOptions) {{
     super(
       new ContractSpec([ {spec} ]),
@@ -96,13 +129,20 @@ pub fn generate(spec: &[ScSpecEntry]) -> String {
             cases: vec![],
         });
     }
+    let mut constructor_args: Option<Vec<types::FunctionInput>> = None;
     // Filter out function entries with names that start with "__" and partition the results
+    collected.iter().for_each(|entry| match entry {
+        Entry::Function { name, inputs, .. } if name == "__constructor" => {
+            constructor_args = Some(inputs.clone());
+        }
+        _ => {}
+    });
     let (fns, other): (Vec<_>, Vec<_>) = collected
         .into_iter()
         .filter(|entry| !matches!(entry, Entry::Function { name, .. } if name.starts_with("__")))
         .partition(|entry| matches!(entry, Entry::Function { .. }));
     let top = other.iter().map(entry_to_method_type).join("\n");
-    let bottom = generate_class(&fns, spec);
+    let bottom = generate_class(&fns, constructor_args, spec);
     format!("{top}\n\n{bottom}")
 }
 
@@ -174,6 +214,18 @@ pub fn outputs_to_return_type(outputs: &[Type]) -> String {
     }
 }
 
+/// Convert a function's inputs to TypeScript arguments. Returns a tuple with the arguments
+/// as they'll actually be used in JS, as well as TS type definitions for the arguments.
+pub fn args_to_ts(inputs: &[types::FunctionInput]) -> Option<(String, String)> {
+    if inputs.is_empty() {
+        None
+    } else {
+        let input_vals = inputs.iter().map(func_input_to_arg_name).join(", ");
+        let input_types = inputs.iter().map(func_input_to_ts).join(", ");
+        Some((format!("{{{input_vals}}}"), format!("{{{input_types}}}")))
+    }
+}
+
 #[allow(clippy::too_many_lines)]
 pub fn entry_to_method_type(entry: &Entry) -> String {
     match entry {
@@ -184,15 +236,11 @@ pub fn entry_to_method_type(entry: &Entry) -> String {
             outputs,
             ..
         } => {
-            let input_vals = inputs.iter().map(func_input_to_arg_name).join(", ");
-            let input = (!inputs.is_empty())
-                .then(|| {
-                    format!(
-                        "{{{input_vals}}}: {{{}}}, ",
-                        inputs.iter().map(func_input_to_ts).join(", ")
-                    )
-                })
-                .unwrap_or_default();
+            let input = if let Some((args, arg_types)) = args_to_ts(inputs) {
+                format!("{args}: {arg_types}, ")
+            } else {
+                String::new()
+            };
             let doc = doc_to_ts_doc(doc, Some(name), 0);
             let return_type = outputs_to_return_type(outputs);
             format!(

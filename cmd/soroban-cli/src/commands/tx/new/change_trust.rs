@@ -7,6 +7,12 @@ use crate::{commands::tx, tx::builder, xdr};
 pub struct Cmd {
     #[command(flatten)]
     pub tx: tx::Args,
+    #[clap(flatten)]
+    pub op: Args,
+}
+
+#[derive(Debug, clap::Args, Clone)]
+pub struct Args {
     #[arg(long)]
     pub line: builder::Asset,
     /// Limit for the trust line, 0 to remove the trust line
@@ -14,8 +20,8 @@ pub struct Cmd {
     pub limit: i64,
 }
 
-impl From<&Cmd> for xdr::OperationBody {
-    fn from(cmd: &Cmd) -> Self {
+impl From<&Args> for xdr::OperationBody {
+    fn from(cmd: &Args) -> Self {
         let line = match cmd.line.0.clone() {
             xdr::Asset::CreditAlphanum4(asset) => xdr::ChangeTrustAsset::CreditAlphanum4(asset),
             xdr::Asset::CreditAlphanum12(asset) => xdr::ChangeTrustAsset::CreditAlphanum12(asset),

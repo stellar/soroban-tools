@@ -47,9 +47,9 @@ impl Project {
     pub fn init(
         &self,
         contract_name: &str,
-        contract_id: &str,
-        rpc_url: &str,
-        network_passphrase: &str,
+        contract_id: Option<&str>,
+        rpc_url: Option<&str>,
+        network_passphrase: Option<&str>,
         spec: &[ScSpecEntry],
     ) -> std::io::Result<()> {
         self.replace_placeholder_patterns(contract_name, contract_id, rpc_url, network_passphrase)?;
@@ -59,9 +59,9 @@ impl Project {
     fn replace_placeholder_patterns(
         &self,
         contract_name: &str,
-        contract_id: &str,
-        rpc_url: &str,
-        network_passphrase: &str,
+        contract_id: Option<&str>,
+        rpc_url: Option<&str>,
+        network_passphrase: Option<&str>,
     ) -> std::io::Result<()> {
         let replacement_strings = &[
             ("INSERT_CONTRACT_NAME_HERE", contract_name),
@@ -73,9 +73,18 @@ impl Project {
                 "INSERT_CAMEL_CASE_CONTRACT_NAME_HERE",
                 &contract_name.to_lower_camel_case(),
             ),
-            ("INSERT_CONTRACT_ID_HERE", contract_id),
-            ("INSERT_NETWORK_PASSPHRASE_HERE", network_passphrase),
-            ("INSERT_RPC_URL_HERE", rpc_url),
+            (
+                "INSERT_CONTRACT_ID_HERE",
+                contract_id.unwrap_or("INSERT_CONTRACT_ID_HERE"),
+            ),
+            (
+                "INSERT_RPC_URL_HERE",
+                rpc_url.unwrap_or("INSERT_RPC_URL_HERE"),
+            ),
+            (
+                "INSERT_NETWORK_PASSPHRASE_HERE",
+                network_passphrase.unwrap_or("INSERT_NETWORK_PASSPHRASE_HERE"),
+            ),
         ];
         let root: &Path = self.as_ref();
         ["package.json", "README.md", "src/index.ts"]
@@ -93,8 +102,8 @@ impl Project {
     fn append_index_ts(
         &self,
         spec: &[ScSpecEntry],
-        contract_id: &str,
-        network_passphrase: &str,
+        contract_id: Option<&str>,
+        network_passphrase: Option<&str>,
     ) -> std::io::Result<()> {
         let networks = Project::format_networks_object(contract_id, network_passphrase);
         let types_and_fns = generate(spec);
@@ -104,7 +113,15 @@ impl Project {
             .write_all(format!("\n\n{networks}\n\n{types_and_fns}").as_bytes())
     }
 
-    fn format_networks_object(contract_id: &str, network_passphrase: &str) -> String {
+    fn format_networks_object(
+        contract_id: Option<&str>,
+        network_passphrase: Option<&str>,
+    ) -> String {
+        if contract_id.is_none() || network_passphrase.is_none() {
+            return String::new();
+        }
+        let contract_id = contract_id.unwrap();
+        let network_passphrase = network_passphrase.unwrap();
         let network = match network_passphrase {
             NETWORK_PASSPHRASE_TESTNET => "testnet",
             NETWORK_PASSPHRASE_FUTURENET => "futurenet",
@@ -138,9 +155,9 @@ mod test {
         let p: Project = root.as_ref().to_path_buf().try_into()?;
         p.init(
             "test_custom_types",
-            "CA3D5KRYM6CB7OWQ6TWYRR3Z4T7GNZLKERYNZGGA5SOAOPIFY6YQGAXE",
-            "https://rpc-futurenet.stellar.org:443",
-            "Test SDF Future Network ; October 2022",
+            Some("CA3D5KRYM6CB7OWQ6TWYRR3Z4T7GNZLKERYNZGGA5SOAOPIFY6YQGAXE"),
+            Some("https://rpc-futurenet.stellar.org:443"),
+            Some("Test SDF Future Network ; October 2022"),
             &spec,
         )
         .unwrap();

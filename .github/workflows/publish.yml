@@ -9,10 +9,9 @@ defaults:
     shell: bash
 
 jobs:
-
   publish:
     uses: stellar/actions/.github/workflows/rust-publish.yml@main
     with:
-      additional-deb-packages: libudev-dev
+      additional-deb-packages: libudev-dev libdbus-1-dev
     secrets:
       CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}

@@ -6,10 +6,14 @@ use soroban_spec_tools::contract;
 use soroban_spec_tools::contract::Spec;
 
 use crate::{
-    commands::contract::info::{
-        env_meta::Error::{NoEnvMetaPresent, NoSACEnvMeta},
-        shared::{self, fetch_wasm, MetasInfoOutput},
+    commands::{
+        contract::info::{
+            env_meta::Error::{NoEnvMetaPresent, NoSACEnvMeta},
+            shared::{self, fetch, Fetched, MetasInfoOutput},
+        },
+        global,
     },
+    print::Print,
     xdr::{ScEnvMetaEntry, ScEnvMetaEntryInterfaceVersion},
 };
 
@@ -37,13 +41,14 @@ pub enum Error {
 }
 
 impl Cmd {
-    pub async fn run(&self) -> Result<String, Error> {
-        let bytes = fetch_wasm(&self.common).await?;
+    pub async fn run(&self, global_args: &global::Args) -> Result<String, Error> {
+        let print = Print::new(global_args.quiet);
+        let Fetched { contract, .. } = fetch(&self.common, &print).await?;
 
-        let Some(bytes) = bytes else {
-            return Err(NoSACEnvMeta());
+        let spec = match contract {
+            shared::Contract::Wasm { wasm_bytes } => Spec::new(&wasm_bytes)?,
+            shared::Contract::StellarAssetContract => return Err(NoSACEnvMeta()),
         };
-        let spec = Spec::new(&bytes)?;
 
         let Some(env_meta_base64) = spec.env_meta_base64 else {
             return Err(NoEnvMetaPresent());

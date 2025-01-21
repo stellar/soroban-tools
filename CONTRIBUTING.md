@@ -73,7 +73,7 @@ should initially look like this.
    > origin  https://github.com/YOUR_USERNAME/stellar-cli.git (push)
    ```
 
-* Set the `stellar/stellar-cli` repo as new remote upstream repository that will
+* Set the `stellar/stellar-cli` repo as the remote upstream repository that will
 sync with your fork. 
   ```
   git remote add upstream https://github.com/stellar/stellar-cli.git

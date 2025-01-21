@@ -4,6 +4,7 @@ import {
   AssembledTransaction,
   Client as ContractClient,
   ClientOptions as ContractClientOptions,
+  MethodOptions,
   Result,
   Spec as ContractSpec,
 } from '@stellar/stellar-sdk/contract';

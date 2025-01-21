@@ -1,8 +1,9 @@
 use std::fmt::Debug;
 
 use crate::commands::contract::info::interface::Error::NoInterfacePresent;
-use crate::commands::contract::info::shared;
-use crate::commands::contract::info::shared::fetch_wasm;
+use crate::commands::contract::info::shared::{self, fetch, Fetched};
+use crate::commands::global;
+use crate::print::Print;
 use clap::{command, Parser};
 use soroban_spec_rust::ToFormattedString;
 use soroban_spec_tools::contract;
@@ -43,19 +44,23 @@ pub enum Error {
 }
 
 impl Cmd {
-    pub async fn run(&self) -> Result<String, Error> {
-        let bytes = fetch_wasm(&self.common).await?;
+    pub async fn run(&self, global_args: &global::Args) -> Result<String, Error> {
+        let print = Print::new(global_args.quiet);
+        let Fetched { contract, .. } = fetch(&self.common, &print).await?;
 
-        let (base64, spec) = if bytes.is_none() {
-            Spec::spec_to_base64(&soroban_sdk::token::StellarAssetSpec::spec_xdr())?
-        } else {
-            let spec = Spec::new(&bytes.unwrap())?;
+        let (base64, spec) = match contract {
+            shared::Contract::Wasm { wasm_bytes } => {
+                let spec = Spec::new(&wasm_bytes)?;
 
-            if spec.env_meta_base64.is_none() {
-                return Err(NoInterfacePresent());
+                if spec.env_meta_base64.is_none() {
+                    return Err(NoInterfacePresent());
+                }
+
+                (spec.spec_base64.unwrap(), spec.spec)
             }
-
-            (spec.spec_base64.unwrap(), spec.spec)
+            shared::Contract::StellarAssetContract => {
+                Spec::spec_to_base64(&soroban_sdk::token::StellarAssetSpec::spec_xdr())?
+            }
         };
 
         let res = match self.output {

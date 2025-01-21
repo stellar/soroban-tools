@@ -53,7 +53,7 @@ fn invoke() {
 }
 ```
 
-Itegration tests in Crate
+Integration tests in Crate
 ==============
 
-Currently all tests that require an RPC server are hidden behind a `it` feature, [found here](./tests/it/integration). To allow Rust-Analyzer to see the tests in vscode, `.vscode/settings.json`. Without RA, you can't follow through definitions and more importantly see errors before running tests tests.
+Currently all tests that require an RPC server are hidden behind a `it` feature, [found here](./tests/it/integration). To allow Rust-Analyzer to see the tests in vscode, `.vscode/settings.json`. Without RA, you can't follow through definitions and more importantly see errors before running tests.

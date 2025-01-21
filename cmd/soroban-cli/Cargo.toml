@@ -67,7 +67,8 @@ rand = "0.8.5"
 wasmparser = { workspace = true }
 sha2 = { workspace = true }
 csv = "1.1.6"
-ed25519-dalek = { workspace = true }
+# zeroize feature ensures that all sensitive data is zeroed out when dropped
+ed25519-dalek = { workspace = true, features = ["zeroize"] }
 reqwest = { version = "0.12.7", default-features = false, features = [
     "rustls-tls",
     "http2",
@@ -118,9 +119,15 @@ fqdn = "0.3.12"
 open = "5.3.0"
 url = "2.5.2"
 wasm-gen = "0.1.4"
+zeroize = "1.8.1"
+keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service"] }
+whoami = "1.5.2"
+license-fetcher = "0.5.0"
+
 
 [build-dependencies]
 crate-git-revision = "0.0.6"
+license-fetcher = { version = "0.5.0", features = ["build"] }
 serde.workspace = true
 thiserror.workspace = true
 

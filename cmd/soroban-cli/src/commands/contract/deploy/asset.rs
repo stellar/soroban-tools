@@ -1,3 +1,4 @@
+use crate::config::locator;
 use crate::xdr::{
     Asset, ContractDataDurability, ContractExecutable, ContractIdPreimage, CreateContractArgs,
     Error as XdrError, Hash, HostFunction, InvokeHostFunctionOp, LedgerKey::ContractData,
@@ -21,6 +22,8 @@ use crate::{
     utils::contract_id_hash_from_asset,
 };
 
+use crate::commands::contract::deploy::utils::alias_validator;
+
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("error parsing int: {0}")]
@@ -39,6 +42,8 @@ pub enum Error {
     Network(#[from] network::Error),
     #[error(transparent)]
     Builder(#[from] builder::Error),
+    #[error(transparent)]
+    Locator(#[from] locator::Error),
 }
 
 impl From<Infallible> for Error {
@@ -56,8 +61,15 @@ pub struct Cmd {
 
     #[command(flatten)]
     pub config: config::Args,
+
     #[command(flatten)]
     pub fee: crate::fee::Args,
+
+    /// The alias that will be used to save the assets's id.
+    /// Whenever used, `--alias` will always overwrite the existing contract id
+    /// configuration without asking for confirmation.
+    #[arg(long, value_parser = clap::builder::ValueParser::new(alias_validator))]
+    pub alias: Option<String>,
 }
 
 impl Cmd {
@@ -66,6 +78,16 @@ impl Cmd {
         match res {
             TxnEnvelopeResult::TxnEnvelope(tx) => println!("{}", tx.to_xdr_base64(Limits::none())?),
             TxnEnvelopeResult::Res(contract) => {
+                let network = self.config.get_network()?;
+
+                if let Some(alias) = self.alias.clone() {
+                    self.config.locator.save_contract_id(
+                        &network.network_passphrase,
+                        &contract,
+                        &alias,
+                    )?;
+                }
+
                 println!("{contract}");
             }
         }

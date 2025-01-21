@@ -8,11 +8,11 @@ pub mod fund;
 pub mod generate;
 pub mod ls;
 pub mod rm;
-pub mod show;
+pub mod secret;
 
 #[derive(Debug, Parser)]
 pub enum Cmd {
-    /// Add a new identity (keypair, ledger, macOS keychain)
+    /// Add a new identity (keypair, ledger, OS specific secure store)
     Add(add::Cmd),
 
     /// Given an identity return its address (public key)
@@ -30,8 +30,8 @@ pub enum Cmd {
     /// Remove an identity
     Rm(rm::Cmd),
 
-    /// Given an identity return its private key
-    Show(show::Cmd),
+    /// Output an identity's secret key
+    Secret(secret::Cmd),
 
     /// Set the default identity that will be used on all commands.
     /// This allows you to skip `--source-account` or setting a environment
@@ -61,7 +61,7 @@ pub enum Error {
     Ls(#[from] ls::Error),
 
     #[error(transparent)]
-    Show(#[from] show::Error),
+    Show(#[from] secret::Error),
 
     #[error(transparent)]
     Default(#[from] default::Error),
@@ -70,13 +70,13 @@ pub enum Error {
 impl Cmd {
     pub async fn run(&self, global_args: &global::Args) -> Result<(), Error> {
         match self {
-            Cmd::Add(cmd) => cmd.run()?,
+            Cmd::Add(cmd) => cmd.run(global_args)?,
             Cmd::Address(cmd) => cmd.run()?,
-            Cmd::Fund(cmd) => cmd.run().await?,
+            Cmd::Fund(cmd) => cmd.run(global_args).await?,
             Cmd::Generate(cmd) => cmd.run(global_args).await?,
             Cmd::Ls(cmd) => cmd.run()?,
             Cmd::Rm(cmd) => cmd.run()?,
-            Cmd::Show(cmd) => cmd.run()?,
+            Cmd::Secret(cmd) => cmd.run()?,
             Cmd::Default(cmd) => cmd.run(global_args)?,
         };
         Ok(())

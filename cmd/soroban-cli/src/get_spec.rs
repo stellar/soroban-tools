@@ -44,7 +44,7 @@ pub async fn get_remote_contract_spec(
         |c| c.get_network().map_err(Error::from),
     )?;
     tracing::trace!(?network);
-    let client = rpc::Client::new(&network.rpc_url)?;
+    let client = network.rpc_client()?;
     // Get contract data
     let r = client.get_contract_data(contract_id).await?;
     tracing::trace!("{r:?}");

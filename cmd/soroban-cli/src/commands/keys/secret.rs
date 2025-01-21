@@ -16,6 +16,7 @@ pub enum Error {
 
 #[derive(Debug, clap::Parser, Clone)]
 #[group(skip)]
+#[command(name = "secret", alias = "show")]
 pub struct Cmd {
     /// Name of identity to lookup, default is test identity
     pub name: String,

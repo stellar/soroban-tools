@@ -9,12 +9,14 @@ use ed25519_dalek::SigningKey;
 use heck::ToKebabCase;
 
 use crate::xdr::{
-    self, Hash, InvokeContractArgs, ScAddress, ScSpecEntry, ScSpecFunctionV0, ScSpecTypeDef, ScVal,
-    ScVec,
+    self, Hash, InvokeContractArgs, ScSpecEntry, ScSpecFunctionV0, ScSpecTypeDef, ScVal, ScVec,
 };
 
 use crate::commands::txn_result::TxnResult;
-use crate::config::{self};
+use crate::config::{
+    self,
+    sc_address::{self, UnresolvedScAddress},
+};
 use soroban_spec_tools::Spec;
 
 #[derive(thiserror::Error, Debug)]
@@ -43,6 +45,10 @@ pub enum Error {
     MissingArgument(String),
     #[error("")]
     MissingFileArg(PathBuf),
+    #[error(transparent)]
+    ScAddress(#[from] sc_address::Error),
+    #[error(transparent)]
+    Config(#[from] config::Error),
 }
 
 pub fn build_host_function_parameters(
@@ -80,18 +86,18 @@ pub fn build_host_function_parameters(
         .map(|i| {
             let name = i.name.to_utf8_string()?;
             if let Some(mut val) = matches_.get_raw(&name) {
-                let mut s = val.next().unwrap().to_string_lossy().to_string();
+                let mut s = val
+                    .next()
+                    .unwrap()
+                    .to_string_lossy()
+                    .trim_matches('"')
+                    .to_string();
                 if matches!(i.type_, ScSpecTypeDef::Address) {
-                    let cmd = crate::commands::keys::address::Cmd {
-                        name: s.clone(),
-                        hd_path: Some(0),
-                        locator: config.locator.clone(),
-                    };
-                    if let Ok(address) = cmd.public_key() {
-                        s = address.to_string();
-                    }
-                    if let Ok(key) = cmd.private_key() {
-                        signers.push(key);
+                    let addr = resolve_address(&s, config)?;
+                    let signer = resolve_signer(&s, config);
+                    s = addr;
+                    if let Some(signer) = signer {
+                        signers.push(signer);
                     }
                 }
                 spec.from_string(&s, &i.type_)
@@ -125,7 +131,7 @@ pub fn build_host_function_parameters(
         })
         .collect::<Result<Vec<_>, Error>>()?;
 
-    let contract_address_arg = ScAddress::Contract(Hash(contract_id.0));
+    let contract_address_arg = xdr::ScAddress::Contract(Hash(contract_id.0));
     let function_symbol_arg = function
         .try_into()
         .map_err(|()| Error::FunctionNameTooLong(function.clone()))?;
@@ -245,4 +251,23 @@ pub fn output_to_string(
             .to_string();
     }
     Ok(TxnResult::Res(res_str))
+}
+
+fn resolve_address(addr_or_alias: &str, config: &config::Args) -> Result<String, Error> {
+    let sc_address: UnresolvedScAddress = addr_or_alias.parse().unwrap();
+    let account = match sc_address {
+        UnresolvedScAddress::Resolved(addr) => addr.to_string(),
+        addr @ UnresolvedScAddress::Alias(_) => {
+            let addr = addr.resolve(&config.locator, &config.get_network()?.network_passphrase)?;
+            match addr {
+                xdr::ScAddress::Account(account) => account.to_string(),
+                contract @ xdr::ScAddress::Contract(_) => contract.to_string(),
+            }
+        }
+    };
+    Ok(account)
+}
+
+fn resolve_signer(addr_or_alias: &str, config: &config::Args) -> Option<SigningKey> {
+    config.locator.key(addr_or_alias).ok()?.key_pair(None).ok()
 }

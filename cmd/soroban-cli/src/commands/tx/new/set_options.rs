@@ -3,11 +3,17 @@ use clap::{command, Parser};
 use crate::{commands::tx, xdr};
 
 #[derive(Parser, Debug, Clone)]
-#[allow(clippy::struct_excessive_bools, clippy::doc_markdown)]
 #[group(skip)]
 pub struct Cmd {
     #[command(flatten)]
     pub tx: tx::Args,
+    #[clap(flatten)]
+    pub op: Args,
+}
+
+#[derive(Debug, clap::Args, Clone)]
+#[allow(clippy::struct_excessive_bools, clippy::doc_markdown)]
+pub struct Args {
     #[arg(long)]
     /// Account of the inflation destination.
     pub inflation_dest: Option<xdr::AccountId>,
@@ -61,8 +67,8 @@ pub struct Cmd {
     pub clear_clawback_enabled: bool,
 }
 
-impl From<&Cmd> for xdr::OperationBody {
-    fn from(cmd: &Cmd) -> Self {
+impl From<&Args> for xdr::OperationBody {
+    fn from(cmd: &Args) -> Self {
         let mut set_flags = None;
         let mut set_flag = |flag: xdr::AccountFlags| {
             *set_flags.get_or_insert(0) |= flag as u32;

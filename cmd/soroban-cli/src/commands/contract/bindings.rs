@@ -12,7 +12,7 @@ pub enum Cmd {
     Rust(rust::Cmd),
 
     /// Generate a TypeScript / JavaScript package
-    Typescript(typescript::Cmd),
+    Typescript(Box<typescript::Cmd>),
 
     /// Generate Python bindings
     Python(python::Cmd),

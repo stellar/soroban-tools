@@ -25,8 +25,8 @@ pub struct Cmd {
 
 impl Cmd {
     pub fn run(&self) -> Result<(), Error> {
-        Ok(self
-            .config_locator
-            .write_network(&self.name, &self.network)?)
+        self.config_locator
+            .write_network(&self.name, &self.network)?;
+        Ok(())
     }
 }

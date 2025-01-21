@@ -34,7 +34,7 @@ pub struct Args {
         required_unless_present = "wasm",
         required_unless_present = "wasm_hash"
     )]
-    pub contract_id: Option<alias::ContractAddress>,
+    pub contract_id: Option<alias::UnresolvedContract>,
     /// Storage key (symbols only)
     #[arg(long = "key", conflicts_with = "key_xdr")]
     pub key: Option<Vec<String>>,

@@ -283,7 +283,7 @@ fn use_env() {
 
     sandbox
         .new_assert_cmd("keys")
-        .arg("show")
+        .arg("secret")
         .arg("bob")
         .assert()
         .success()
@@ -330,7 +330,7 @@ fn config_dirs_precedence() {
 
     sandbox
         .new_assert_cmd("keys")
-        .arg("show")
+        .arg("secret")
         .arg("alice")
         .arg("--verbose")
         .assert()
@@ -392,4 +392,48 @@ fn set_default_network() {
         .assert()
         .stdout(predicate::str::contains("STELLAR_NETWORK=testnet"))
         .success();
+}
+
+#[test]
+fn cannot_create_contract_with_test_name() {
+    let sandbox = TestEnv::default();
+    sandbox
+        .new_assert_cmd("keys")
+        .arg("generate")
+        .arg("--no-fund")
+        .arg("d")
+        .assert()
+        .success();
+    sandbox
+        .new_assert_cmd("contract")
+        .arg("alias")
+        .arg("add")
+        .arg("d")
+        .arg("--id=CA3D5KRYM6CB7OWQ6TWYRR3Z4T7GNZLKERYNZGGA5SOAOPIFY6YQGAXE")
+        .assert()
+        .stderr(predicate::str::contains("cannot overlap with key"))
+        .failure();
+}
+
+#[test]
+fn cannot_create_key_with_alias() {
+    let sandbox = TestEnv::default();
+    sandbox
+        .new_assert_cmd("contract")
+        .arg("alias")
+        .arg("add")
+        .arg("t")
+        .arg("--id=CA3D5KRYM6CB7OWQ6TWYRR3Z4T7GNZLKERYNZGGA5SOAOPIFY6YQGAXE")
+        .assert()
+        .success();
+    sandbox
+        .new_assert_cmd("keys")
+        .arg("generate")
+        .arg("--no-fund")
+        .arg("t")
+        .assert()
+        .stderr(predicate::str::contains(
+            "cannot overlap with contract alias",
+        ))
+        .failure();
 }

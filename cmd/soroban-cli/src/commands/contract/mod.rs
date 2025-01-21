@@ -151,7 +151,7 @@ impl Cmd {
             Cmd::Alias(alias) => alias.run(global_args)?,
             Cmd::Deploy(deploy) => deploy.run(global_args).await?,
             Cmd::Id(id) => id.run()?,
-            Cmd::Info(info) => info.run().await?,
+            Cmd::Info(info) => info.run(global_args).await?,
             Cmd::Init(init) => init.run(global_args)?,
             Cmd::Inspect(inspect) => inspect.run(global_args)?,
             Cmd::Install(install) => install.run(global_args).await?,

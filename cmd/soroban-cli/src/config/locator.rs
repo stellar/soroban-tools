@@ -83,6 +83,10 @@ pub enum Error {
     UpgradeCheckReadFailed { path: PathBuf, error: io::Error },
     #[error("Failed to write upgrade check file: {path}: {error}")]
     UpgradeCheckWriteFailed { path: PathBuf, error: io::Error },
+    #[error("Contract alias {0}, cannot overlap with key")]
+    ContractAliasCannotOverlapWithKey(String),
+    #[error("Key cannot {0} cannot overlap with contract alias")]
+    KeyCannotOverlapWithContractAlias(String),
 }
 
 #[derive(Debug, clap::Args, Default, Clone)]
@@ -162,11 +166,14 @@ impl Args {
         )
     }
 
-    pub fn write_identity(&self, name: &str, secret: &Secret) -> Result<(), Error> {
+    pub fn write_identity(&self, name: &str, secret: &Secret) -> Result<PathBuf, Error> {
+        if let Ok(Some(_)) = self.load_contract_from_alias(name) {
+            return Err(Error::KeyCannotOverlapWithContractAlias(name.to_owned()));
+        }
         KeyType::Identity.write(name, secret, &self.config_dir()?)
     }
 
-    pub fn write_network(&self, name: &str, network: &Network) -> Result<(), Error> {
+    pub fn write_network(&self, name: &str, network: &Network) -> Result<PathBuf, Error> {
         KeyType::Network.write(name, network, &self.config_dir()?)
     }
 
@@ -286,6 +293,9 @@ impl Args {
         contract_id: &stellar_strkey::Contract,
         alias: &str,
     ) -> Result<(), Error> {
+        if self.read_identity(alias).is_ok() {
+            return Err(Error::ContractAliasCannotOverlapWithKey(alias.to_owned()));
+        }
         let path = self.alias_path(alias)?;
         let dir = path.parent().ok_or(Error::CannotAccessConfigDir)?;
 
@@ -441,10 +451,14 @@ impl KeyType {
         key: &str,
         value: &T,
         pwd: &Path,
-    ) -> Result<(), Error> {
+    ) -> Result<PathBuf, Error> {
         let filepath = ensure_directory(self.path(pwd, key))?;
         let data = toml::to_string(value).map_err(|_| Error::ConfigSerialization)?;
-        std::fs::write(&filepath, data).map_err(|error| Error::IdCreationFailed { filepath, error })
+        std::fs::write(&filepath, data).map_err(|error| Error::IdCreationFailed {
+            filepath: filepath.clone(),
+            error,
+        })?;
+        Ok(filepath)
     }
 
     fn root(&self, pwd: &Path) -> PathBuf {

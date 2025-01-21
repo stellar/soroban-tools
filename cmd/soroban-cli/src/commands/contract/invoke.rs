@@ -40,7 +40,7 @@ use soroban_spec_tools::contract;
 pub struct Cmd {
     /// Contract ID to invoke
     #[arg(long = "id", env = "STELLAR_CONTRACT_ID")]
-    pub contract_id: config::ContractAddress,
+    pub contract_id: config::UnresolvedContract,
     // For testing only
     #[arg(skip)]
     pub wasm: Option<std::path::PathBuf>,

@@ -46,7 +46,7 @@ jobs:
     - run: rustup target add ${{ matrix.sys.target }}
 
     - if: matrix.sys.target == 'aarch64-unknown-linux-gnu'
-      run: sudo apt-get update && sudo apt-get -y install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu libudev-dev
+      run: sudo apt-get update && sudo apt-get -y install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu libudev-dev libdbus-1-dev
 
     - name: Setup vars
       run: |
@@ -69,6 +69,7 @@ jobs:
       env:
         CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
       working-directory: ${{ env.BUILD_WORKING_DIR }}
+      run: sudo apt-get update && sudo apt-get -y install libdbus-1-dev
       run: cargo build --target-dir="$GITHUB_WORKSPACE/target" --package ${{ matrix.crate.name }} --features opt --release --target ${{ matrix.sys.target }}
 
     - name: Build provenance for attestation (release only)
@@ -157,6 +158,6 @@ jobs:
               repo: context.repo.repo,
               release_id: ${{ github.event.release.id }},
               name: '${{ env.STELLAR_CLI_INSTALLER }}',
-              data: fs.readFileSync('Output/stellar-installer.exe'),
+              data: fs.readFileSync('${{ env.STELLAR_CLI_INSTALLER }}'),
             });
 

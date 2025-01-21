@@ -7,13 +7,19 @@ use crate::{commands::tx, xdr};
 pub struct Cmd {
     #[command(flatten)]
     pub tx: tx::Args,
+    #[clap(flatten)]
+    pub op: Args,
+}
+
+#[derive(Debug, clap::Args, Clone)]
+pub struct Args {
     /// Muxed Account to merge with, e.g. `GBX...`, 'MBX...'
     #[arg(long)]
     pub account: xdr::MuxedAccount,
 }
 
-impl From<&Cmd> for xdr::OperationBody {
-    fn from(cmd: &Cmd) -> Self {
+impl From<&Args> for xdr::OperationBody {
+    fn from(cmd: &Args) -> Self {
         xdr::OperationBody::AccountMerge(cmd.account.clone())
     }
 }

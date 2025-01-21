@@ -1,9 +1,11 @@
 use std::fmt::Debug;
 
+use crate::commands::global;
+
 pub mod env_meta;
 pub mod interface;
 pub mod meta;
-mod shared;
+pub mod shared;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum Cmd {
@@ -60,11 +62,11 @@ pub enum Error {
 }
 
 impl Cmd {
-    pub async fn run(&self) -> Result<(), Error> {
+    pub async fn run(&self, global_args: &global::Args) -> Result<(), Error> {
         let result = match &self {
-            Cmd::Interface(interface) => interface.run().await?,
-            Cmd::Meta(meta) => meta.run().await?,
-            Cmd::EnvMeta(env_meta) => env_meta.run().await?,
+            Cmd::Interface(interface) => interface.run(global_args).await?,
+            Cmd::Meta(meta) => meta.run(global_args).await?,
+            Cmd::EnvMeta(env_meta) => env_meta.run(global_args).await?,
         };
         println!("{result}");
         Ok(())

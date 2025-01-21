@@ -22,7 +22,7 @@ use crate::{
 pub struct Cmd {
     /// Contract ID to fetch
     #[arg(long = "id", env = "STELLAR_CONTRACT_ID")]
-    pub contract_id: config::ContractAddress,
+    pub contract_id: config::UnresolvedContract,
     /// Where to write output otherwise stdout is used
     #[arg(long, short = 'o')]
     pub out_file: Option<std::path::PathBuf>,

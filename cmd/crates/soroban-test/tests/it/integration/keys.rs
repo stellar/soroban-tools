@@ -3,13 +3,12 @@ use soroban_test::AssertExt;
 use soroban_test::TestEnv;
 
 fn pubkey_for_identity(sandbox: &TestEnv, name: &str) -> String {
-    let output = sandbox
+    sandbox
         .new_assert_cmd("keys")
         .arg("address")
         .arg(name)
         .assert()
-        .stdout_as_str();
-    return output;
+        .stdout_as_str()
 }
 
 #[tokio::test]
@@ -61,7 +60,7 @@ async fn overwrite_identity() {
             "error: An identity with the name 'test2' already exists",
         ));
 
-    assert_eq!(initial_pubkey, pubkey_for_identity(&sandbox, "test2"));
+    assert_eq!(initial_pubkey, pubkey_for_identity(sandbox, "test2"));
 
     sandbox
         .new_assert_cmd("keys")
@@ -72,5 +71,5 @@ async fn overwrite_identity() {
         .stderr(predicate::str::contains("Overwriting identity 'test2'"))
         .success();
 
-    assert_ne!(initial_pubkey, pubkey_for_identity(&sandbox, "test2"));
+    assert_ne!(initial_pubkey, pubkey_for_identity(sandbox, "test2"));
 }

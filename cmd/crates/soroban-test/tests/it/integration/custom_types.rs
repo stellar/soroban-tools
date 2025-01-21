@@ -5,7 +5,7 @@ use soroban_test::TestEnv;
 
 use crate::integration::util::{deploy_custom, extend_contract};
 
-use super::util::invoke_with_roundtrip;
+use super::util::{invoke, invoke_with_roundtrip};
 
 fn invoke_custom(e: &TestEnv, id: &str, func: &str) -> assert_cmd::Command {
     let mut s = e.new_assert_cmd("contract");
@@ -40,7 +40,9 @@ async fn parse() {
     negative_i32(sandbox, id).await;
     negative_i64(sandbox, id).await;
     account_address(sandbox, id).await;
+    account_address_with_alias(sandbox, id).await;
     contract_address(sandbox, id).await;
+    contract_address_with_alias(sandbox, id).await;
     bytes(sandbox, id).await;
     const_enum(sandbox, id).await;
     number_arg_return_ok(sandbox, id);
@@ -237,6 +239,12 @@ async fn account_address(sandbox: &TestEnv, id: &str) {
     .await;
 }
 
+async fn account_address_with_alias(sandbox: &TestEnv, id: &str) {
+    let res = invoke(sandbox, id, "addresse", &json!("test").to_string()).await;
+    let test = format!("\"{}\"", super::tx::operations::test_address(sandbox));
+    assert_eq!(test, res);
+}
+
 async fn contract_address(sandbox: &TestEnv, id: &str) {
     invoke_with_roundtrip(
         sandbox,
@@ -245,6 +253,22 @@ async fn contract_address(sandbox: &TestEnv, id: &str) {
         json!("CA3D5KRYM6CB7OWQ6TWYRR3Z4T7GNZLKERYNZGGA5SOAOPIFY6YQGAXE"),
     )
     .await;
+}
+
+async fn contract_address_with_alias(sandbox: &TestEnv, id: &str) {
+    sandbox
+        .new_assert_cmd("contract")
+        .arg("alias")
+        .arg("add")
+        .arg("test_contract")
+        .arg("--id=CA3D5KRYM6CB7OWQ6TWYRR3Z4T7GNZLKERYNZGGA5SOAOPIFY6YQGAXE")
+        .assert()
+        .success();
+    let res = invoke(sandbox, id, "addresse", &json!("test_contract").to_string()).await;
+    assert_eq!(
+        res,
+        "\"CA3D5KRYM6CB7OWQ6TWYRR3Z4T7GNZLKERYNZGGA5SOAOPIFY6YQGAXE\""
+    );
 }
 
 async fn bytes(sandbox: &TestEnv, id: &str) {

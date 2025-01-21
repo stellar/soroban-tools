@@ -185,3 +185,55 @@ fn build_with_metadata() {
 
     assert_eq!(entries, expected_entries);
 }
+
+// Test that bins don't contain absolute paths to the local crate registry.
+//
+// See make_rustflags_to_remap_absolute_paths
+#[test]
+fn remap_absolute_paths() {
+    #[derive(Eq, PartialEq, Copy, Clone)]
+    enum Remap {
+        Yes,
+        No,
+    }
+
+    fn run(contract_name: &str, manifest_path: &std::path::Path, remap: Remap) -> bool {
+        let sandbox_remap = TestEnv::default();
+        let mut cmd = sandbox_remap.new_assert_cmd("contract");
+
+        if remap == Remap::No {
+            // This will prevent stellar-cli from setting CARGO_BUILD_RUSTFLAGS,
+            // and removing absolute paths.
+            // See docs for `make_rustflags_to_remap_absolute_paths`.
+            cmd.env("RUSTFLAGS", "");
+        }
+
+        cmd.current_dir(manifest_path)
+            .arg("build")
+            .assert()
+            .success();
+
+        let wasm_path = manifest_path
+            .join("target/wasm32-unknown-unknown/release")
+            .join(format!("{contract_name}.wasm"));
+
+        let cargo_home = home::cargo_home().unwrap();
+        let registry_prefix = format!("{}/registry/src/", &cargo_home.display());
+
+        let wasm_buf = std::fs::read(wasm_path).unwrap();
+        let wasm_str = String::from_utf8_lossy(&wasm_buf);
+
+        wasm_str.contains(&registry_prefix)
+    }
+
+    let cargo_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let fixture_path = cargo_dir.join("tests/fixtures/eth_abi/");
+
+    // The eth_abi example is known to exhibit this problem.
+    // Compile it both with and without path remapping to verify.
+    let remap_has_abs_paths = run("soroban_eth_abi", &fixture_path, Remap::Yes);
+    let noremap_has_abs_paths = run("soroban_eth_abi", &fixture_path, Remap::No);
+
+    assert!(!remap_has_abs_paths);
+    assert!(noremap_has_abs_paths);
+}

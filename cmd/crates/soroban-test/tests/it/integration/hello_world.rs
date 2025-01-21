@@ -1,10 +1,9 @@
-use predicates::boolean::PredicateBooleanExt;
 use soroban_cli::{
     commands::{
         contract::{self, fetch},
         txn_result::TxnResult,
     },
-    config::{address::Address, locator, secret},
+    config::{locator, secret},
 };
 use soroban_rpc::GetLatestLedgerResponse;
 use soroban_test::{AssertExt, TestEnv, LOCAL_NETWORK_PASSPHRASE};
@@ -19,7 +18,7 @@ async fn invoke_view_with_non_existent_source_account() {
     let sandbox = &TestEnv::new();
     let id = deploy_hello(sandbox).await;
     let world = "world";
-    let mut cmd = hello_world_cmd(&id, world);
+    let cmd = hello_world_cmd(&id, world);
     let res = sandbox.run_cmd_with(cmd, "").await.unwrap();
     assert_eq!(res, TxnResult::Res(format!(r#"["Hello",{world:?}]"#)));
 }
@@ -28,7 +27,7 @@ async fn invoke_view_with_non_existent_source_account() {
 #[allow(clippy::too_many_lines)]
 async fn invoke() {
     let sandbox = &TestEnv::new();
-    let c = soroban_rpc::Client::new(&sandbox.rpc_url).unwrap();
+    let c = sandbox.network.rpc_client().unwrap();
     let GetLatestLedgerResponse { sequence, .. } = c.get_latest_ledger().await.unwrap();
     sandbox
         .new_assert_cmd("keys")
@@ -54,7 +53,7 @@ async fn invoke() {
 
     let secret_key = sandbox
         .new_assert_cmd("keys")
-        .arg("show")
+        .arg("secret")
         .arg("test")
         .assert()
         .stdout_as_str();
@@ -66,7 +65,7 @@ async fn invoke() {
         .stdout_as_str();
     let secret_key_1 = sandbox
         .new_assert_cmd("keys")
-        .arg("show")
+        .arg("secret")
         .arg("test")
         .arg("--hd-path=1")
         .assert()
@@ -116,7 +115,7 @@ async fn invoke() {
     assert_eq!(sk_from_file, format!("secret_key = \"{secret_key_1}\"\n"));
     let secret_key_1_readin = sandbox
         .new_assert_cmd("keys")
-        .arg("show")
+        .arg("secret")
         .arg("testone")
         .assert()
         .stdout_as_str();
@@ -366,7 +365,7 @@ async fn fetch(sandbox: &TestEnv, id: &str) {
     let f = sandbox.dir().join("contract.wasm");
     let cmd = sandbox.cmd_arr::<fetch::Cmd>(&[
         "--rpc-url",
-        &sandbox.rpc_url,
+        &sandbox.network.rpc_url,
         "--network-passphrase",
         LOCAL_NETWORK_PASSPHRASE,
         "--id",

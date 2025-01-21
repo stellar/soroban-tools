@@ -322,12 +322,11 @@ mod tests {
                 .unwrap()
                 .as_array()
                 .unwrap()
-                .get(0)
-                .unwrap()
-                .as_str()
-                .unwrap(),
-            "cdylib",
-            "expected [lib.crate-type] to be 'cdylib'"
+                .iter()
+                .map(|v| v.as_str().unwrap())
+                .collect::<Vec<_>>(),
+            ["lib", "cdylib"],
+            "expected [lib.crate-type] to be lib,cdylib"
         );
     }
 

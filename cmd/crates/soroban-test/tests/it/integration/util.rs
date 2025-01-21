@@ -11,16 +11,19 @@ pub const CUSTOM_TYPES: &Wasm = &Wasm::Custom("test-wasms", "test_custom_types")
 pub const CUSTOM_ACCOUNT: &Wasm = &Wasm::Custom("test-wasms", "test_custom_account");
 pub const SWAP: &Wasm = &Wasm::Custom("test-wasms", "test_swap");
 
+pub async fn invoke(sandbox: &TestEnv, id: &str, func: &str, data: &str) -> String {
+    sandbox
+        .invoke_with_test(&["--id", id, "--", func, &format!("--{func}"), data])
+        .await
+        .unwrap()
+}
 pub async fn invoke_with_roundtrip<D>(e: &TestEnv, id: &str, func: &str, data: D)
 where
     D: Display,
 {
     let data = data.to_string();
     println!("{data}");
-    let res = e
-        .invoke_with_test(&["--id", id, "--", func, &format!("--{func}"), &data])
-        .await
-        .unwrap();
+    let res = invoke(e, id, func, &data).await;
     assert_eq!(res, data);
 }
 

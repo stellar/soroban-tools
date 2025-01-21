@@ -16,54 +16,55 @@ default-members = [
 exclude = [
     "cmd/crates/soroban-test/tests/fixtures/hello",
     "cmd/crates/soroban-test/tests/fixtures/bye",
+    "cmd/crates/soroban-test/tests/fixtures/eth_abi",
 ]
 
 [workspace.package]
-version = "22.0.1"
+version = "22.2.0"
 rust-version = "1.81.0"
 
 # Dependencies located in this repo:
 [workspace.dependencies.soroban-cli]
-version = "=22.0.1"
+version = "=22.2.0"
 path = "cmd/soroban-cli"
 
 [workspace.dependencies.soroban-spec-json]
-version = "=22.0.1"
+version = "=22.2.0"
 path = "./cmd/crates/soroban-spec-json"
 
 [workspace.dependencies.soroban-spec-typescript]
-version = "22.0.1"
+version = "22.2.0"
 path = "./cmd/crates/soroban-spec-typescript"
 
 [workspace.dependencies.soroban-spec-tools]
-version = "22.0.1"
+version = "22.2.0"
 path = "./cmd/crates/soroban-spec-tools"
 
 # Dependencies from the rs-stellar-xdr repo:
 [workspace.dependencies.stellar-xdr]
-version = "=22.0.0-rc.1.1"
+version = "=22.1.0"
 default-features = true
 
 # Dependencies from the rs-soroban-sdk repo:
 [workspace.dependencies.soroban-spec]
-version = "=22.0.0-rc.3"
+version = "=22.0.4"
 
 [workspace.dependencies.soroban-spec-rust]
-version = "=22.0.0-rc.3"
+version = "=22.0.4"
 
 [workspace.dependencies.soroban-sdk]
-version = "=22.0.0-rc.3"
+version = "=22.0.4"
 
 [workspace.dependencies.soroban-token-sdk]
-version = "=22.0.0-rc.3"
+version = "=22.0.4"
 
 [workspace.dependencies.soroban-ledger-snapshot]
-version = "=22.0.0-rc.3"
+version = "=22.0.4"
 
 # Dependencies from the rs-stellar-rpc-client repo:
 [workspace.dependencies.soroban-rpc]
 package = "stellar-rpc-client"
-version = "=22.0.0-rc.1"
+version = "=22.0.0"
 
 # Dependencies from elsewhere shared by crates:
 [workspace.dependencies]
@@ -105,6 +106,7 @@ toml_edit = "0.22.20"
 toml = "0.8.19"
 reqwest = "0.12.7"
 predicates = "3.1.2"
+httpmock = "0.7.0"
 
 [profile.test-wasms]
 inherits = "release"

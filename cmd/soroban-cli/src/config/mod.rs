@@ -1,4 +1,3 @@
-use address::Address;
 use clap::{arg, command};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -19,11 +18,14 @@ pub mod alias;
 pub mod data;
 pub mod locator;
 pub mod network;
+pub mod sc_address;
 pub mod secret;
 pub mod sign_with;
 pub mod upgrade_check;
 
-pub use alias::ContractAddress;
+pub use address::UnresolvedMuxedAccount;
+pub use alias::UnresolvedContract;
+pub use sc_address::UnresolvedScAddress;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -56,7 +58,7 @@ pub struct Args {
     /// or a seed phrase (--source "kite urban…").
     /// If `--build-only` or `--sim-only` flags were NOT provided, this key will also be used to
     /// sign the final transaction. In that case, trying to sign with public key will fail.
-    pub source_account: Address,
+    pub source_account: UnresolvedMuxedAccount,
 
     #[arg(long)]
     /// If using a seed phrase, which hierarchical deterministic path to use, e.g. `m/44'/148'/{hd_path}`. Example: `--hd-path 1`. Default: `0`

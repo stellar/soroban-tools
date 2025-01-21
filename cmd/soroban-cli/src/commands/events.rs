@@ -42,7 +42,7 @@ pub struct Cmd {
         num_args = 1..=6,
         help_heading = "FILTERS"
     )]
-    contract_ids: Vec<config::ContractAddress>,
+    contract_ids: Vec<config::UnresolvedContract>,
     /// A set of (up to 4) topic filters to filter event topics on. A single
     /// topic filter can contain 1-4 different segment filters, separated by
     /// commas, with an asterisk (`*` character) indicating a wildcard segment.

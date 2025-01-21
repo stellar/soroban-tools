@@ -2,12 +2,18 @@ use clap::{command, Parser};
 
 use crate::{commands::tx, tx::builder, xdr};
 
-#[allow(clippy::struct_excessive_bools, clippy::doc_markdown)]
 #[derive(Parser, Debug, Clone)]
 #[group(skip)]
 pub struct Cmd {
     #[command(flatten)]
     pub tx: tx::Args,
+    #[clap(flatten)]
+    pub op: Args,
+}
+
+#[derive(Debug, clap::Args, Clone)]
+#[allow(clippy::struct_excessive_bools, clippy::doc_markdown)]
+pub struct Args {
     /// Account to set trustline flags for
     #[arg(long)]
     pub trustor: xdr::AccountId,
@@ -32,8 +38,8 @@ pub struct Cmd {
     pub clear_trustline_clawback_enabled: bool,
 }
 
-impl From<&Cmd> for xdr::OperationBody {
-    fn from(cmd: &Cmd) -> Self {
+impl From<&Args> for xdr::OperationBody {
+    fn from(cmd: &Args) -> Self {
         let mut set_flags = 0;
         let mut set_flag = |flag: xdr::TrustLineFlags| set_flags |= flag as u32;
 
