@@ -85,6 +85,7 @@ Tools for smart contract developers
 * `extend` — Extend the time to live ledger of a contract-data ledger entry
 * `deploy` — Deploy a wasm contract
 * `fetch` — Fetch a contract's Wasm binary
+* `verify` — Verify the source that build the Wasm binary
 * `id` — Generate the contract id for a given contract or asset
 * `info` — Access info about contracts
 * `init` — Initialize a Soroban contract project
@@ -450,6 +451,26 @@ Fetch a contract's Wasm binary
 * `--rpc-header <RPC_HEADERS>` — RPC Header(s) to include in requests to the RPC provider
 * `--network-passphrase <NETWORK_PASSPHRASE>` — Network passphrase to sign the transaction sent to the rpc server
 * `--network <NETWORK>` — Name of network to use from config
+
+
+
+## `stellar contract verify`
+
+Verify the source that build the Wasm binary
+
+**Usage:** `stellar contract verify [OPTIONS] <--wasm <WASM>|--wasm-hash <WASM_HASH>|--id <CONTRACT_ID>>`
+
+###### **Options:**
+
+* `--wasm <WASM>` — Wasm file to extract the data from
+* `--wasm-hash <WASM_HASH>` — Wasm hash to get the data for
+* `--id <CONTRACT_ID>` — Contract id or contract alias to get the data for
+* `--rpc-url <RPC_URL>` — RPC server endpoint
+* `--rpc-header <RPC_HEADERS>` — RPC Header(s) to include in requests to the RPC provider
+* `--network-passphrase <NETWORK_PASSPHRASE>` — Network passphrase to sign the transaction sent to the rpc server
+* `--network <NETWORK>` — Name of network to use from config
+* `--global` — Use global config
+* `--config-dir <CONFIG_DIR>` — Location of config directory, default is "."
 
 
 

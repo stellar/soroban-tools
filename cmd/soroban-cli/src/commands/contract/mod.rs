@@ -15,6 +15,7 @@ pub mod invoke;
 pub mod optimize;
 pub mod read;
 pub mod restore;
+pub mod verify;
 
 use crate::commands::global;
 
@@ -44,6 +45,9 @@ pub enum Cmd {
 
     /// Fetch a contract's Wasm binary
     Fetch(fetch::Cmd),
+
+    /// Verify the source that build the Wasm binary
+    Verify(verify::Cmd),
 
     /// Generate the contract id for a given contract or asset
     #[command(subcommand)]
@@ -114,6 +118,9 @@ pub enum Error {
     Fetch(#[from] fetch::Error),
 
     #[error(transparent)]
+    Verify(#[from] verify::Error),
+
+    #[error(transparent)]
     Init(#[from] init::Error),
 
     #[error(transparent)]
@@ -158,6 +165,7 @@ impl Cmd {
             Cmd::Invoke(invoke) => invoke.run(global_args).await?,
             Cmd::Optimize(optimize) => optimize.run()?,
             Cmd::Fetch(fetch) => fetch.run().await?,
+            Cmd::Verify(verify) => verify.run(global_args).await?,
             Cmd::Read(read) => read.run().await?,
             Cmd::Restore(restore) => restore.run().await?,
         }
