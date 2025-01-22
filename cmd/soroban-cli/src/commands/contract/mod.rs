@@ -144,7 +144,7 @@ pub enum Error {
 impl Cmd {
     pub async fn run(&self, global_args: &global::Args) -> Result<(), Error> {
         match &self {
-            Cmd::Asset(asset) => asset.run().await?,
+            Cmd::Asset(asset) => asset.run(global_args).await?,
             Cmd::Bindings(bindings) => bindings.run().await?,
             Cmd::Build(build) => build.run(global_args)?,
             Cmd::Extend(extend) => extend.run().await?,

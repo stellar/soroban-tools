@@ -1,4 +1,5 @@
 use crate::config::locator;
+use crate::print::Print;
 use crate::xdr::{
     Asset, ContractDataDurability, ContractExecutable, ContractIdPreimage, CreateContractArgs,
     Error as XdrError, Hash, HostFunction, InvokeHostFunctionOp, LedgerKey::ContractData,
@@ -73,7 +74,7 @@ pub struct Cmd {
 }
 
 impl Cmd {
-    pub async fn run(&self) -> Result<(), Error> {
+    pub async fn run(&self, global_args: &global::Args) -> Result<(), Error> {
         let res = self.run_against_rpc_server(None, None).await?.to_envelope();
         match res {
             TxnEnvelopeResult::TxnEnvelope(tx) => println!("{}", tx.to_xdr_base64(Limits::none())?),
@@ -81,6 +82,17 @@ impl Cmd {
                 let network = self.config.get_network()?;
 
                 if let Some(alias) = self.alias.clone() {
+                    if let Some(existing_contract) = self
+                        .config
+                        .locator
+                        .get_contract_id(&alias, &network.network_passphrase)?
+                    {
+                        let print = Print::new(global_args.quiet);
+                        print.warnln(format!(
+                            "Overwriting existing contract id: {existing_contract}"
+                        ));
+                    };
+
                     self.config.locator.save_contract_id(
                         &network.network_passphrase,
                         &contract,

@@ -138,6 +138,17 @@ impl Cmd {
                 let network = self.config.get_network()?;
 
                 if let Some(alias) = self.alias.clone() {
+                    if let Some(existing_contract) = self
+                        .config
+                        .locator
+                        .get_contract_id(&alias, &network.network_passphrase)?
+                    {
+                        let print = Print::new(global_args.quiet);
+                        print.warnln(format!(
+                            "Overwriting existing contract id: {existing_contract}"
+                        ));
+                    };
+
                     self.config.locator.save_contract_id(
                         &network.network_passphrase,
                         &contract,

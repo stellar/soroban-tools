@@ -1,3 +1,5 @@
+use crate::commands::global;
+
 use super::{deploy, id};
 
 #[derive(Debug, clap::Subcommand)]
@@ -17,10 +19,10 @@ pub enum Error {
 }
 
 impl Cmd {
-    pub async fn run(&self) -> Result<(), Error> {
+    pub async fn run(&self, global_args: &global::Args) -> Result<(), Error> {
         match &self {
             Cmd::Id(id) => id.run()?,
-            Cmd::Deploy(asset) => asset.run().await?,
+            Cmd::Deploy(asset) => asset.run(global_args).await?,
         }
         Ok(())
     }
