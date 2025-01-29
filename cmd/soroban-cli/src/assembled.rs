@@ -23,12 +23,12 @@ pub async fn simulate_and_assemble_transaction(
             signatures: VecM::default(),
         }))
         .await?;
-    match sim_res.error {
-        None => Ok(Assembled::new(tx, sim_res)?),
-        Some(e) => {
-            diagnostic_events(&sim_res.events, tracing::Level::ERROR);
-            Err(Error::TransactionSimulationFailed(e))
-        }
+    tracing::trace!("{sim_res:#?}");
+    if let Some(e) = &sim_res.error {
+        crate::log::event::all(&sim_res.events()?);
+        Err(Error::TransactionSimulationFailed(e.clone()))
+    } else {
+        Ok(Assembled::new(tx, sim_res)?)
     }
 }
 
@@ -282,18 +282,6 @@ fn restore(parent: &Transaction, restore: &RestorePreamble) -> Result<Transactio
         .try_into()?,
         ext: TransactionExt::V1(transaction_data),
     })
-}
-
-fn diagnostic_events(events: &[impl std::fmt::Debug], level: tracing::Level) {
-    for (i, event) in events.iter().enumerate() {
-        if level == tracing::Level::TRACE {
-            tracing::trace!("{i}: {event:#?}");
-        } else if level == tracing::Level::INFO {
-            tracing::info!("{i}: {event:#?}");
-        } else if level == tracing::Level::ERROR {
-            tracing::error!("{i}: {event:#?}");
-        }
-    }
 }
 
 #[cfg(test)]

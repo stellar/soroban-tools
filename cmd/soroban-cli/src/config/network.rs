@@ -88,6 +88,7 @@ pub struct Args {
     /// Name of network to use from config
     #[arg(
         long,
+        short = 'n',
         env = "STELLAR_NETWORK",
         help_heading = HEADING_RPC,
     )]

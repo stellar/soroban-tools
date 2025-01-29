@@ -22,6 +22,7 @@ pub struct Cmd {
     pub container_args: Args,
 
     /// Container to get logs from
+    #[arg(default_value = "local")]
     pub name: String,
 }
 

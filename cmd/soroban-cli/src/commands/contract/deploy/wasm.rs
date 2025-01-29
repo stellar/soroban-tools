@@ -19,7 +19,7 @@ use soroban_spec_tools::contract as contract_spec;
 use crate::{
     assembled::simulate_and_assemble_transaction,
     commands::{
-        contract::{self, arg_parsing, id::wasm::get_contract_id, install},
+        contract::{self, arg_parsing, id::wasm::get_contract_id, upload},
         global,
         txn_result::{TxnEnvelopeResult, TxnResult},
         NetworkRunnable, HEADING_RPC,
@@ -73,7 +73,7 @@ pub struct Cmd {
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error(transparent)]
-    Install(#[from] install::Error),
+    Install(#[from] upload::Error),
     #[error("error parsing int: {0}")]
     ParseIntError(#[from] ParseIntError),
     #[error("internal conversion error: {0}")]
@@ -180,7 +180,7 @@ impl NetworkRunnable for Cmd {
             let hash = if self.fee.build_only || self.fee.sim_only {
                 wasm::Args { wasm: wasm.clone() }.hash()?
             } else {
-                install::Cmd {
+                upload::Cmd {
                     wasm: wasm::Args { wasm: wasm.clone() },
                     config: config.clone(),
                     fee: self.fee.clone(),
@@ -288,11 +288,12 @@ impl NetworkRunnable for Cmd {
             return Ok(TxnResult::Txn(txn));
         }
 
-        print.globeln("Submitting deploy transaction…");
         print.log_transaction(&txn, &network, true)?;
+        let signed_txn = &config.sign_with_local_key(*txn).await?;
+        print.globeln("Submitting deploy transaction…");
 
         let get_txn_resp = client
-            .send_transaction_polling(&config.sign_with_local_key(*txn).await?)
+            .send_transaction_polling(signed_txn)
             .await?
             .try_into()?;
 

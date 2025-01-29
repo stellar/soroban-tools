@@ -1,6 +1,6 @@
 use clap::{command, Parser};
 
-use crate::{commands::tx, xdr};
+use crate::{commands::tx, config::address, xdr};
 
 #[derive(Parser, Debug, Clone)]
 #[group(skip)]
@@ -15,11 +15,14 @@ pub struct Cmd {
 pub struct Args {
     /// Muxed Account to merge with, e.g. `GBX...`, 'MBX...'
     #[arg(long)]
-    pub account: xdr::MuxedAccount,
+    pub account: address::UnresolvedMuxedAccount,
 }
 
-impl From<&Args> for xdr::OperationBody {
-    fn from(cmd: &Args) -> Self {
-        xdr::OperationBody::AccountMerge(cmd.account.clone())
+impl TryFrom<&Cmd> for xdr::OperationBody {
+    type Error = tx::args::Error;
+    fn try_from(cmd: &Cmd) -> Result<Self, Self::Error> {
+        Ok(xdr::OperationBody::AccountMerge(
+            cmd.tx.resolve_muxed_address(&cmd.op.account)?,
+        ))
     }
 }

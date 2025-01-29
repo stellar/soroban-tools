@@ -43,6 +43,8 @@ pub enum Error {
     #[error(transparent)]
     Sign(#[from] sign::Error),
     #[error(transparent)]
+    Args(#[from] args::Error),
+    #[error(transparent)]
     Simulate(#[from] simulate::Error),
 }
 

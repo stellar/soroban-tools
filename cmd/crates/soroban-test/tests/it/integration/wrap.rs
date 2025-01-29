@@ -1,4 +1,4 @@
-use soroban_cli::{tx::builder, utils::contract_id_hash_from_asset};
+use soroban_cli::{config::locator, tx::builder, utils::contract_id_hash_from_asset};
 use soroban_test::{AssertExt, TestEnv, LOCAL_NETWORK_PASSPHRASE};
 
 #[tokio::test]
@@ -12,21 +12,23 @@ async fn burn() {
         .arg("test")
         .assert()
         .stdout_as_str();
-    let asset = format!("native:{address}");
+    let asset = "native";
     sandbox
         .new_assert_cmd("contract")
         .arg("asset")
         .arg("deploy")
         .arg("--source=test")
         .arg("--asset")
-        .arg(&asset)
+        .arg(asset)
         .assert()
         .success();
-    // wrap_cmd(&asset).run().await.unwrap();
-    let asset: builder::Asset = asset.parse().unwrap();
+    let asset = asset
+        .parse::<builder::Asset>()
+        .unwrap()
+        .resolve(&locator::Args::default())
+        .unwrap();
     let hash = contract_id_hash_from_asset(&asset, &network_passphrase);
     let id = stellar_strkey::Contract(hash.0).to_string();
-    println!("{id}, {address}");
     sandbox
         .new_assert_cmd("contract")
         .args([

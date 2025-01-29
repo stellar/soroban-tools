@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use crate::xdr;
 
-use super::{address, locator, UnresolvedContract};
+use super::{key, locator, UnresolvedContract};
 
 /// `ScAddress` can be either a resolved `xdr::ScAddress` or an alias of a `Contract` or `MuxedAccount`.
 #[allow(clippy::module_name_repetitions)]
@@ -23,7 +23,7 @@ pub enum Error {
     #[error(transparent)]
     Locator(#[from] locator::Error),
     #[error(transparent)]
-    Address(#[from] address::Error),
+    Key(#[from] key::Error),
     #[error("Account alias not Found{0}")]
     AccountAliasNotFound(String),
 }
@@ -50,9 +50,8 @@ impl UnresolvedScAddress {
             UnresolvedScAddress::Alias(alias) => alias,
         };
         let contract = UnresolvedContract::resolve_alias(&alias, locator, network_passphrase);
-        let muxed_account =
-            super::UnresolvedMuxedAccount::resolve_muxed_account_with_alias(&alias, locator, None);
-        match (contract, muxed_account) {
+        let key = locator.read_key(&alias);
+        match (contract, key) {
             (Ok(contract), Ok(_)) => {
                 eprintln!(
                     "Warning: ScAddress alias {alias} is ambiguous, assuming it is a contract"
@@ -60,7 +59,9 @@ impl UnresolvedScAddress {
                 Ok(xdr::ScAddress::Contract(xdr::Hash(contract.0)))
             }
             (Ok(contract), _) => Ok(xdr::ScAddress::Contract(xdr::Hash(contract.0))),
-            (_, Ok(muxed_account)) => Ok(xdr::ScAddress::Account(muxed_account.account_id())),
+            (_, Ok(key)) => Ok(xdr::ScAddress::Account(
+                key.muxed_account(None)?.account_id(),
+            )),
             _ => Err(Error::AccountAliasNotFound(alias)),
         }
     }

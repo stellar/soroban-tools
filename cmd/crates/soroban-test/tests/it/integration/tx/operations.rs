@@ -1,4 +1,5 @@
 use soroban_cli::{
+    config::locator,
     tx::{builder, ONE_XLM},
     utils::contract_id_hash_from_asset,
     xdr::{self, ReadXdr, SequenceNumber},
@@ -90,6 +91,71 @@ async fn create_account() {
 }
 
 #[tokio::test]
+async fn create_account_with_alias() {
+    let sandbox = &TestEnv::new();
+    sandbox
+        .new_assert_cmd("keys")
+        .args(["generate", "--no-fund", "new"])
+        .assert()
+        .success();
+    let test = test_address(sandbox);
+    let client = sandbox.client();
+    let test_account = client.get_account(&test).await.unwrap();
+    println!("test account has a balance of {}", test_account.balance);
+    let starting_balance = ONE_XLM * 100;
+    sandbox
+        .new_assert_cmd("tx")
+        .args([
+            "new",
+            "create-account",
+            "--destination",
+            "new",
+            "--starting-balance",
+            starting_balance.to_string().as_str(),
+        ])
+        .assert()
+        .success();
+    let test_account_after = client.get_account(&test).await.unwrap();
+    assert!(test_account_after.balance < test_account.balance);
+    let id = deploy_contract(sandbox, HELLO_WORLD, DeployKind::Normal, Some("new")).await;
+    println!("{id}");
+    invoke_hello_world(sandbox, &id);
+}
+
+#[tokio::test]
+async fn payment_with_alias() {
+    let sandbox = &TestEnv::new();
+    let client = sandbox.client();
+    let (test, test1) = setup_accounts(sandbox);
+    let test_account = client.get_account(&test).await.unwrap();
+    println!("test account has a balance of {}", test_account.balance);
+
+    let before = client.get_account(&test).await.unwrap();
+    let test1_account_entry_before = client.get_account(&test1).await.unwrap();
+
+    sandbox
+        .new_assert_cmd("tx")
+        .args([
+            "new",
+            "payment",
+            "--destination",
+            "test1",
+            "--amount",
+            ONE_XLM.to_string().as_str(),
+        ])
+        .assert()
+        .success();
+    let test1_account_entry = client.get_account(&test1).await.unwrap();
+    assert_eq!(
+        ONE_XLM,
+        test1_account_entry.balance - test1_account_entry_before.balance,
+        "Should have One XLM more"
+    );
+    let after = client.get_account(&test).await.unwrap();
+    assert_eq!(before.balance - 10_000_100, after.balance);
+}
+
+#[tokio::test]
 async fn payment() {
     let sandbox = &TestEnv::new();
     let client = sandbox.network.rpc_client().unwrap();
@@ -173,21 +239,52 @@ async fn account_merge() {
 }
 
 #[tokio::test]
+async fn account_merge_with_alias() {
+    let sandbox = &TestEnv::new();
+    let client = sandbox.client();
+    let (test, test1) = setup_accounts(sandbox);
+    let before = client.get_account(&test).await.unwrap();
+    let before1 = client.get_account(&test1).await.unwrap();
+    let fee = 100;
+    sandbox
+        .new_assert_cmd("tx")
+        .args([
+            "new",
+            "account-merge",
+            "--source",
+            "test1",
+            "--account",
+            "test",
+            "--fee",
+            fee.to_string().as_str(),
+        ])
+        .assert()
+        .success();
+    let after = client.get_account(&test).await.unwrap();
+    assert!(client.get_account(&test1).await.is_err());
+    assert_eq!(before.balance + before1.balance - fee, after.balance);
+}
+
+#[tokio::test]
 async fn set_trustline_flags() {
     let sandbox = &TestEnv::new();
-    let (test, issuer) = setup_accounts(sandbox);
-    let asset = format!("usdc:{issuer}");
-    issue_asset(sandbox, &test, &asset, 100_000, 100).await;
+    let (test, test1_address) = setup_accounts(sandbox);
+    let asset = "usdc:test1";
+    issue_asset(sandbox, &test, asset, 100_000, 100).await;
     sandbox
         .new_assert_cmd("contract")
         .arg("asset")
         .arg("deploy")
         .arg("--asset")
-        .arg(&asset)
+        .arg(asset)
         .assert()
         .success();
     let id = contract_id_hash_from_asset(
-        asset.parse::<builder::Asset>().unwrap(),
+        &format!("usdc:{test1_address}")
+            .parse::<builder::Asset>()
+            .unwrap()
+            .resolve(&locator::Args::default())
+            .unwrap(),
         &sandbox.network.network_passphrase,
     );
     // sandbox
@@ -450,7 +547,11 @@ async fn change_trust() {
 
     // wrap_cmd(&asset).run().await.unwrap();
     let id = contract_id_hash_from_asset(
-        asset.parse::<builder::Asset>().unwrap(),
+        &asset
+            .parse::<builder::Asset>()
+            .unwrap()
+            .resolve(&locator::Args::default())
+            .unwrap(),
         &sandbox.network.network_passphrase,
     );
     sandbox

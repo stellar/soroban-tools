@@ -125,13 +125,13 @@ pub fn is_hex_string(s: &str) -> bool {
 }
 
 pub fn contract_id_hash_from_asset(
-    asset: impl Into<Asset>,
+    asset: &Asset,
     network_passphrase: &str,
 ) -> stellar_strkey::Contract {
     let network_id = Hash(Sha256::digest(network_passphrase.as_bytes()).into());
     let preimage = HashIdPreimage::ContractId(HashIdPreimageContractId {
         network_id,
-        contract_id_preimage: ContractIdPreimage::Asset(asset.into()),
+        contract_id_preimage: ContractIdPreimage::Asset(asset.clone()),
     });
     let preimage_xdr = preimage
         .to_xdr(Limits::none())

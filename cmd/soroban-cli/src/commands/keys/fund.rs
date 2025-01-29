@@ -2,12 +2,12 @@ use clap::command;
 
 use crate::{commands::global, config::network, print::Print};
 
-use super::address;
+use super::public_key;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error(transparent)]
-    Address(#[from] address::Error),
+    Address(#[from] public_key::Error),
     #[error(transparent)]
     Network(#[from] network::Error),
 }
@@ -19,7 +19,7 @@ pub struct Cmd {
     pub network: network::Args,
     /// Address to fund
     #[command(flatten)]
-    pub address: address::Cmd,
+    pub address: public_key::Cmd,
 }
 
 impl Cmd {

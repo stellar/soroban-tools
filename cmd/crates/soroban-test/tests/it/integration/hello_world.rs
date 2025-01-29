@@ -402,12 +402,9 @@ fn invoke_log(sandbox: &TestEnv, id: &str) {
         .assert()
         .success()
         .stderr(predicates::str::contains(
-            "INFO contract_event: soroban_cli::log::event: 1:",
+            r#"Event: [{"symbol":"hello"},{"symbol":""}] = {"symbol":"world"}"#,
         ))
-        .stderr(predicates::str::contains("hello"))
         .stderr(predicates::str::contains(
-            "INFO log_event: soroban_cli::log::event: 2:",
-        ))
-        .stderr(predicates::str::contains("hello {}"))
-        .stderr(predicates::str::contains("world"));
+            r#"Log: {"vec":[{"string":"hello {}"},{"symbol":"world"}]}"#,
+        ));
 }

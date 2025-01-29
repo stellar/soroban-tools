@@ -34,8 +34,8 @@ pub struct Cmd {
     #[command(flatten)]
     pub container_args: Args,
 
-    /// Network to start
-    pub network: Network,
+    /// Network to start. Default is `local`
+    pub network: Option<Network>,
 
     /// Optional argument to specify the container name
     #[arg(long)]
@@ -62,6 +62,7 @@ impl Cmd {
     pub async fn run(&self, global_args: &global::Args) -> Result<(), Error> {
         let runner = Runner {
             args: self.clone(),
+            network: self.network.unwrap_or(Network::Local),
             print: print::Print::new(global_args.quiet),
         };
 
@@ -71,13 +72,14 @@ impl Cmd {
 
 struct Runner {
     args: Cmd,
+    network: Network,
     print: print::Print,
 }
 
 impl Runner {
     async fn run_docker_command(&self) -> Result<(), Error> {
         self.print
-            .infoln(format!("Starting {} network", &self.args.network));
+            .infoln(format!("Starting {} network", &self.network));
 
         let docker = self
             .args
@@ -151,7 +153,7 @@ impl Runner {
 
     fn get_image_name(&self) -> String {
         // this can be overriden with the `-t` flag
-        let mut image_tag = match &self.args.network {
+        let mut image_tag = match &self.network {
             Network::Pubnet => "latest",
             Network::Futurenet => "future",
             _ => "testing", // default to testing for local and testnet
@@ -169,7 +171,7 @@ impl Runner {
 
     fn get_container_args(&self) -> Vec<String> {
         [
-            format!("--{}", self.args.network),
+            format!("--{}", self.network),
             "--enable rpc,horizon".to_string(),
             self.get_protocol_version_arg(),
             self.get_limits_arg(),
@@ -201,12 +203,7 @@ impl Runner {
     }
 
     fn container_name(&self) -> Name {
-        Name(
-            self.args
-                .name
-                .clone()
-                .unwrap_or(self.args.network.to_string()),
-        )
+        Name(self.args.name.clone().unwrap_or(self.network.to_string()))
     }
 
     fn print_instructions(&self) {
@@ -226,7 +223,7 @@ impl Runner {
     }
 
     fn get_protocol_version_arg(&self) -> String {
-        if self.args.network == Network::Local && self.args.protocol_version.is_some() {
+        if self.network == Network::Local && self.args.protocol_version.is_some() {
             let version = self.args.protocol_version.as_ref().unwrap();
             format!("--protocol-version {version}")
         } else {
@@ -235,7 +232,7 @@ impl Runner {
     }
 
     fn get_limits_arg(&self) -> String {
-        if self.args.network == Network::Local && self.args.limits.is_some() {
+        if self.network == Network::Local && self.args.limits.is_some() {
             let limits = self.args.limits.as_ref().unwrap();
             format!("--limits {limits}")
         } else {

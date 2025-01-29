@@ -64,7 +64,7 @@ impl Args {
             }
         } else {
             let key_or_name = self.sign_with_key.as_deref().ok_or(Error::NoSignWithKey)?;
-            let secret = locator.key(key_or_name)?;
+            let secret = locator.get_secret_key(key_or_name)?;
             secret.signer(self.hd_path, print)?
         };
         Ok(signer.sign_tx_env(tx, network)?)

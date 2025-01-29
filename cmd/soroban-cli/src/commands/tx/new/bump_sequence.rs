@@ -18,10 +18,10 @@ pub struct Args {
     pub bump_to: i64,
 }
 
-impl From<&Args> for xdr::OperationBody {
-    fn from(cmd: &Args) -> Self {
+impl From<&Cmd> for xdr::OperationBody {
+    fn from(cmd: &Cmd) -> Self {
         xdr::OperationBody::BumpSequence(xdr::BumpSequenceOp {
-            bump_to: cmd.bump_to.into(),
+            bump_to: cmd.op.bump_to.into(),
         })
     }
 }

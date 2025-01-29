@@ -1,6 +1,6 @@
 use clap::{command, Parser};
 
-use crate::{commands::tx, xdr};
+use crate::{commands::tx, config::address, xdr};
 
 #[derive(Parser, Debug, Clone)]
 #[group(skip)]
@@ -16,7 +16,7 @@ pub struct Cmd {
 pub struct Args {
     #[arg(long)]
     /// Account of the inflation destination.
-    pub inflation_dest: Option<xdr::AccountId>,
+    pub inflation_dest: Option<address::UnresolvedMuxedAccount>,
     #[arg(long)]
     /// A number from 0-255 (inclusive) representing the weight of the master key. If the weight of the master key is updated to 0, it is effectively disabled.
     pub master_weight: Option<u8>,
@@ -67,12 +67,15 @@ pub struct Args {
     pub clear_clawback_enabled: bool,
 }
 
-impl From<&Args> for xdr::OperationBody {
-    fn from(cmd: &Args) -> Self {
+impl TryFrom<&Cmd> for xdr::OperationBody {
+    type Error = tx::args::Error;
+    fn try_from(cmd: &Cmd) -> Result<Self, Self::Error> {
+        let tx = &cmd.tx;
         let mut set_flags = None;
         let mut set_flag = |flag: xdr::AccountFlags| {
             *set_flags.get_or_insert(0) |= flag as u32;
         };
+        let cmd = &cmd.op;
 
         if cmd.set_required {
             set_flag(xdr::AccountFlags::RequiredFlag);
@@ -114,8 +117,13 @@ impl From<&Args> for xdr::OperationBody {
         } else {
             None
         };
-        xdr::OperationBody::SetOptions(xdr::SetOptionsOp {
-            inflation_dest: cmd.inflation_dest.clone().map(Into::into),
+        let inflation_dest: Option<xdr::AccountId> = cmd
+            .inflation_dest
+            .as_ref()
+            .map(|dest| tx.resolve_account_id(dest))
+            .transpose()?;
+        Ok(xdr::OperationBody::SetOptions(xdr::SetOptionsOp {
+            inflation_dest,
             clear_flags,
             set_flags,
             master_weight: cmd.master_weight.map(Into::into),
@@ -124,6 +132,6 @@ impl From<&Args> for xdr::OperationBody {
             high_threshold: cmd.high_threshold.map(Into::into),
             home_domain: cmd.home_domain.clone().map(Into::into),
             signer,
-        })
+        }))
     }
 }

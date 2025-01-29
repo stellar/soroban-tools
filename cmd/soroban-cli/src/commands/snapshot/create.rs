@@ -328,7 +328,9 @@ impl Cmd {
                                             get_name_from_stellar_asset_contract_storage(storage)
                                         {
                                             let asset: builder::Asset = name.parse()?;
-                                            if let Some(issuer) = match asset.into() {
+                                            if let Some(issuer) = match asset
+                                                .resolve(&global_args.locator)?
+                                            {
                                                 Asset::Native => None,
                                                 Asset::CreditAlphanum4(a4) => Some(a4.issuer),
                                                 Asset::CreditAlphanum12(a12) => Some(a12.issuer),

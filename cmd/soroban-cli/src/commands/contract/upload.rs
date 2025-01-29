@@ -192,11 +192,10 @@ impl NetworkRunnable for Cmd {
             return Ok(TxnResult::Txn(txn));
         }
 
-        print.globeln("Submitting install transaction…");
+        let signed_txn = &self.config.sign_with_local_key(*txn).await?;
 
-        let txn_resp = client
-            .send_transaction_polling(&self.config.sign_with_local_key(*txn).await?)
-            .await?;
+        print.globeln("Submitting install transaction…");
+        let txn_resp = client.send_transaction_polling(signed_txn).await?;
 
         if args.map_or(true, |a| !a.no_cache) {
             data::write(txn_resp.clone().try_into().unwrap(), &network.rpc_uri()?)?;

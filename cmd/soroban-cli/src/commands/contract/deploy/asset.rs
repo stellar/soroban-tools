@@ -44,6 +44,8 @@ pub enum Error {
     #[error(transparent)]
     Builder(#[from] builder::Error),
     #[error(transparent)]
+    Asset(#[from] builder::asset::Error),
+    #[error(transparent)]
     Locator(#[from] locator::Error),
 }
 
@@ -119,7 +121,7 @@ impl NetworkRunnable for Cmd {
     ) -> Result<Self::Result, Error> {
         let config = config.unwrap_or(&self.config);
         // Parse asset
-        let asset = &self.asset;
+        let asset = self.asset.resolve(&config.locator)?;
 
         let network = config.get_network()?;
         let client = network.rpc_client()?;
@@ -134,7 +136,7 @@ impl NetworkRunnable for Cmd {
             .await?;
         let sequence: i64 = account_details.seq_num.into();
         let network_passphrase = &network.network_passphrase;
-        let contract_id = contract_id_hash_from_asset(asset, network_passphrase);
+        let contract_id = contract_id_hash_from_asset(&asset, network_passphrase);
         let tx = build_wrap_token_tx(
             asset,
             &contract_id,

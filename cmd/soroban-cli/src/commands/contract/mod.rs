@@ -10,13 +10,13 @@ pub mod id;
 pub mod info;
 pub mod init;
 pub mod inspect;
-pub mod install;
 pub mod invoke;
 pub mod optimize;
 pub mod read;
 pub mod restore;
+pub mod upload;
 
-use crate::commands::global;
+use crate::{commands::global, print::Print};
 
 #[derive(Debug, clap::Subcommand)]
 pub enum Cmd {
@@ -61,12 +61,15 @@ pub enum Cmd {
     /// be overwritten unless `--overwrite` is passed.
     Init(init::Cmd),
 
-    /// (Deprecated in favor of `contract info` subcommands) Inspect a WASM file listing contract functions, meta, etc
+    /// (Deprecated in favor of `contract info` subcommand) Inspect a WASM file listing contract functions, meta, etc
     #[command(display_order = 100)]
     Inspect(inspect::Cmd),
 
     /// Install a WASM file to the ledger without creating a contract instance
-    Install(install::Cmd),
+    Upload(upload::Cmd),
+
+    /// (Deprecated in favor of `contract upload` subcommand) Install a WASM file to the ledger without creating a contract instance
+    Install(upload::Cmd),
 
     /// Invoke a contract function
     ///
@@ -126,7 +129,7 @@ pub enum Error {
     Inspect(#[from] inspect::Error),
 
     #[error(transparent)]
-    Install(#[from] install::Error),
+    Install(#[from] upload::Error),
 
     #[error(transparent)]
     Invoke(#[from] invoke::Error),
@@ -143,6 +146,8 @@ pub enum Error {
 
 impl Cmd {
     pub async fn run(&self, global_args: &global::Args) -> Result<(), Error> {
+        let print = Print::new(global_args.quiet);
+
         match &self {
             Cmd::Asset(asset) => asset.run(global_args).await?,
             Cmd::Bindings(bindings) => bindings.run().await?,
@@ -154,7 +159,11 @@ impl Cmd {
             Cmd::Info(info) => info.run(global_args).await?,
             Cmd::Init(init) => init.run(global_args)?,
             Cmd::Inspect(inspect) => inspect.run(global_args)?,
-            Cmd::Install(install) => install.run(global_args).await?,
+            Cmd::Install(install) => {
+                print.warnln("`stellar contract install` has been deprecated in favor of `stellar contract upload`");
+                install.run(global_args).await?;
+            }
+            Cmd::Upload(upload) => upload.run(global_args).await?,
             Cmd::Invoke(invoke) => invoke.run(global_args).await?,
             Cmd::Optimize(optimize) => optimize.run()?,
             Cmd::Fetch(fetch) => fetch.run().await?,

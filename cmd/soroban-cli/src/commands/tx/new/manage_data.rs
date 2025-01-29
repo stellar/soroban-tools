@@ -25,10 +25,10 @@ pub struct Args {
     pub data_value: Option<xdr::BytesM<64>>,
 }
 
-impl From<&Args> for xdr::OperationBody {
-    fn from(cmd: &Args) -> Self {
-        let data_value = cmd.data_value.clone().map(Into::into);
-        let data_name = cmd.data_name.clone().into();
+impl From<&Cmd> for xdr::OperationBody {
+    fn from(cmd: &Cmd) -> Self {
+        let data_value = cmd.op.data_value.clone().map(Into::into);
+        let data_name = cmd.op.data_name.clone().into();
         xdr::OperationBody::ManageData(xdr::ManageDataOp {
             data_name,
             data_value,

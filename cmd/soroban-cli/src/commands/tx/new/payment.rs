@@ -1,6 +1,6 @@
 use clap::{command, Parser};
 
-use crate::{commands::tx, tx::builder, xdr};
+use crate::{commands::tx, config::address, tx::builder, xdr};
 
 #[derive(Parser, Debug, Clone)]
 #[group(skip)]
@@ -14,8 +14,8 @@ pub struct Cmd {
 #[derive(Debug, clap::Args, Clone)]
 pub struct Args {
     /// Account to send to, e.g. `GBX...`
-    #[arg(long, visible_alias = "dest")]
-    pub destination: xdr::MuxedAccount,
+    #[arg(long)]
+    pub destination: address::UnresolvedMuxedAccount,
     /// Asset to send, default native, e.i. XLM
     #[arg(long, default_value = "native")]
     pub asset: builder::Asset,
@@ -24,12 +24,23 @@ pub struct Args {
     pub amount: builder::Amount,
 }
 
-impl From<&Args> for xdr::OperationBody {
-    fn from(cmd: &Args) -> Self {
-        xdr::OperationBody::Payment(xdr::PaymentOp {
-            destination: cmd.destination.clone(),
-            asset: cmd.asset.clone().into(),
-            amount: cmd.amount.into(),
-        })
+impl TryFrom<&Cmd> for xdr::OperationBody {
+    type Error = tx::args::Error;
+    fn try_from(
+        Cmd {
+            tx,
+            op:
+                Args {
+                    destination,
+                    asset,
+                    amount,
+                },
+        }: &Cmd,
+    ) -> Result<Self, Self::Error> {
+        Ok(xdr::OperationBody::Payment(xdr::PaymentOp {
+            destination: tx.resolve_muxed_address(destination)?,
+            asset: tx.resolve_asset(asset)?,
+            amount: amount.into(),
+        }))
     }
 }

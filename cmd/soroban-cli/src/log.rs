@@ -7,7 +7,6 @@ pub mod footprint;
 
 pub use auth::*;
 pub use cost::*;
-pub use event::*;
 pub use footprint::*;
 
 pub fn extract_events(tx_meta: &xdr::TransactionMeta) -> Vec<xdr::DiagnosticEvent> {

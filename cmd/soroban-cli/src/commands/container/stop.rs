@@ -27,6 +27,7 @@ pub struct Cmd {
     pub container_args: Args,
 
     /// Container to stop
+    #[arg(default_value = "local")]
     pub name: String,
 }
 

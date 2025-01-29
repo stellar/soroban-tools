@@ -12,6 +12,7 @@ use soroban_spec::read::FromWasmError;
 
 use super::super::events;
 use super::arg_parsing;
+use crate::assembled::Assembled;
 use crate::{
     assembled::simulate_and_assemble_transaction,
     commands::{
@@ -179,14 +180,15 @@ impl Cmd {
     }
 
     // uses a default account to check if the tx should be sent after the simulation
-    async fn should_send_after_sim(
+    async fn simulate(
         &self,
-        host_function_params: InvokeContractArgs,
-        rpc_client: Client,
-    ) -> Result<ShouldSend, Error> {
-        let account_details = default_account_entry();
-        let sequence: i64 = account_details.seq_num.into();
-        let AccountId(PublicKey::PublicKeyTypeEd25519(account_id)) = account_details.account_id;
+        host_function_params: &InvokeContractArgs,
+        account_details: &AccountEntry,
+        rpc_client: &Client,
+    ) -> Result<Assembled, Error> {
+        let sequence: i64 = account_details.seq_num.0;
+        let AccountId(PublicKey::PublicKeyTypeEd25519(account_id)) =
+            account_details.account_id.clone();
 
         let tx = build_invoke_contract_tx(
             host_function_params.clone(),
@@ -194,10 +196,7 @@ impl Cmd {
             self.fee.fee,
             account_id,
         )?;
-        let txn = simulate_and_assemble_transaction(&rpc_client, &tx).await?;
-        let txn = self.fee.apply_to_assembled_txn(txn); // do we need this part?
-        let sim_res = txn.sim_response();
-        self.should_send_tx(sim_res)
+        Ok(simulate_and_assemble_transaction(rpc_client, &tx).await?)
     }
 }
 
@@ -212,6 +211,7 @@ impl NetworkRunnable for Cmd {
         config: Option<&config::Args>,
     ) -> Result<TxnResult<String>, Error> {
         let config = config.unwrap_or(&self.config);
+        let print = print::Print::new(global_args.map_or(false, |g| g.quiet));
         let network = config.get_network()?;
         tracing::trace!(?network);
         let contract_id = self
@@ -238,11 +238,12 @@ impl NetworkRunnable for Cmd {
         let (function, spec, host_function_params, signers) =
             build_host_function_parameters(&contract_id, &self.slop, &spec_entries, config)?;
 
-        let should_send_tx = self
-            .should_send_after_sim(host_function_params.clone(), client.clone())
+        let assembled = self
+            .simulate(&host_function_params, &default_account_entry(), &client)
             .await?;
+        let should_send = self.should_send_tx(&assembled.sim_res)?;
 
-        let account_details = if should_send_tx == ShouldSend::Yes {
+        let account_details = if should_send == ShouldSend::Yes {
             client
                 .verify_network_passphrase(Some(&network.network_passphrase))
                 .await?;
@@ -251,7 +252,16 @@ impl NetworkRunnable for Cmd {
                 .get_account(&config.source_account()?.to_string())
                 .await?
         } else {
-            default_account_entry()
+            if should_send == ShouldSend::DefaultNo {
+                print.infoln(
+                    "Simulation identified as read-only. Send by rerunning with `--send=yes`.",
+                );
+            }
+            let sim_res = assembled.sim_response();
+            let (return_value, events) = (sim_res.results()?, sim_res.events()?);
+            crate::log::event::all(&events);
+            crate::log::event::contract(&events, &print);
+            return Ok(output_to_string(&spec, &return_value[0].xdr, &function)?);
         };
         let sequence: i64 = account_details.seq_num.into();
         let AccountId(PublicKey::PublicKeyTypeEd25519(account_id)) = account_details.account_id;
@@ -275,68 +285,31 @@ impl NetworkRunnable for Cmd {
         if global_args.map_or(true, |a| !a.no_cache) {
             data::write(sim_res.clone().into(), &network.rpc_uri()?)?;
         }
-        let should_send = self.should_send_tx(sim_res)?;
-        let (return_value, events) = match should_send {
-            ShouldSend::Yes => {
-                let global::Args { no_cache, .. } = global_args.cloned().unwrap_or_default();
-                // Need to sign all auth entries
-                if let Some(tx) = config.sign_soroban_authorizations(&txn, &signers).await? {
-                    txn = Box::new(tx);
-                }
-                let res = client
-                    .send_transaction_polling(&config.sign_with_local_key(*txn).await?)
-                    .await?;
-                if !no_cache {
-                    data::write(res.clone().try_into()?, &network.rpc_uri()?)?;
-                }
-                let events = res
-                    .result_meta
-                    .as_ref()
-                    .map(crate::log::extract_events)
-                    .unwrap_or_default();
-                (res.return_value()?, events)
-            }
-            ShouldSend::No => (sim_res.results()?[0].xdr.clone(), sim_res.events()?),
-            ShouldSend::DefaultNo => {
-                let print = print::Print::new(global_args.map_or(false, |g| g.quiet));
-                print.infoln("Send skipped because simulation identified as read-only. Send by rerunning with `--send=yes`.");
-                (sim_res.results()?[0].xdr.clone(), sim_res.events()?)
-            }
-        };
-        crate::log::events(&events);
+        let global::Args { no_cache, .. } = global_args.cloned().unwrap_or_default();
+        // Need to sign all auth entries
+        if let Some(tx) = config.sign_soroban_authorizations(&txn, &signers).await? {
+            txn = Box::new(tx);
+        }
+        let res = client
+            .send_transaction_polling(&config.sign_with_local_key(*txn).await?)
+            .await?;
+        if !no_cache {
+            data::write(res.clone().try_into()?, &network.rpc_uri()?)?;
+        }
+        let events = res
+            .result_meta
+            .as_ref()
+            .map(crate::log::extract_events)
+            .unwrap_or_default();
+        let return_value = res.return_value()?;
+
+        crate::log::event::all(&events);
+        crate::log::event::contract(&events, &print);
         Ok(output_to_string(&spec, &return_value, &function)?)
     }
 }
 
 const DEFAULT_ACCOUNT_ID: AccountId = AccountId(PublicKey::PublicKeyTypeEd25519(Uint256([0; 32])));
-
-// fn log_auth_cost_and_footprint(resources: Option<&SorobanResources>) {
-//     if let Some(resources) = resources {
-//         crate::log::footprint(&resources.footprint);
-//         crate::log::cost(resources);
-//     }
-// }
-
-// fn resources(tx: &Transaction) -> Option<&SorobanResources> {
-//     let TransactionExt::V1(SorobanTransactionData { resources, .. }) = &tx.ext else {
-//         return None;
-//     };
-//     Some(resources)
-// }
-
-// fn auth_entries(tx: &Transaction) -> VecM<SorobanAuthorizationEntry> {
-//     tx.operations
-//         .first()
-//         .and_then(|op| match op.body {
-//             OperationBody::InvokeHostFunction(ref body) => (matches!(
-//                 body.auth.first().map(|x| &x.root_invocation.function),
-//                 Some(&SorobanAuthorizedFunction::ContractFn(_))
-//             ))
-//             .then_some(body.auth.clone()),
-//             _ => None,
-//         })
-//         .unwrap_or_default()
-// }
 
 fn default_account_entry() -> AccountEntry {
     AccountEntry {

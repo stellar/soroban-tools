@@ -5,6 +5,7 @@ use super::super::config::{
     locator, network,
     secret::{self, Secret},
 };
+
 use crate::{
     commands::global,
     config::address::KeyName,
@@ -178,7 +179,7 @@ impl Cmd {
 
 #[cfg(test)]
 mod tests {
-    use crate::config::{address::KeyName, secret::Secret};
+    use crate::config::{address::KeyName, key::Key, secret::Secret};
     use keyring::{mock, set_default_credential_builder};
 
     fn set_up_test() -> (super::locator::Args, super::Cmd) {
@@ -220,7 +221,7 @@ mod tests {
         let result = cmd.run(&global_args).await;
         assert!(result.is_ok());
         let identity = test_locator.read_identity("test_name").unwrap();
-        assert!(matches!(identity, Secret::SeedPhrase { .. }));
+        assert!(matches!(identity, Key::Secret(Secret::SeedPhrase { .. })));
     }
 
     #[tokio::test]
@@ -232,7 +233,7 @@ mod tests {
         let result = cmd.run(&global_args).await;
         assert!(result.is_ok());
         let identity = test_locator.read_identity("test_name").unwrap();
-        assert!(matches!(identity, Secret::SecretKey { .. }));
+        assert!(matches!(identity, Key::Secret(Secret::SecretKey { .. })));
     }
 
     #[tokio::test]
@@ -245,6 +246,6 @@ mod tests {
         let result = cmd.run(&global_args).await;
         assert!(result.is_ok());
         let identity = test_locator.read_identity("test_name").unwrap();
-        assert!(matches!(identity, Secret::SecureStore { .. }));
+        assert!(matches!(identity, Key::Secret(Secret::SecureStore { .. })));
     }
 }

@@ -1,10 +1,13 @@
 use std::{fmt::Debug, path::Path, str::FromStr};
 
-use crate::xdr::{
-    Error as XdrError, ExtendFootprintTtlOp, ExtensionPoint, LedgerEntry, LedgerEntryChange,
-    LedgerEntryData, LedgerFootprint, Limits, Memo, Operation, OperationBody, Preconditions,
-    SequenceNumber, SorobanResources, SorobanTransactionData, Transaction, TransactionExt,
-    TransactionMeta, TransactionMetaV3, TtlEntry, WriteXdr,
+use crate::{
+    print::Print,
+    xdr::{
+        Error as XdrError, ExtendFootprintTtlOp, ExtensionPoint, LedgerEntry, LedgerEntryChange,
+        LedgerEntryData, LedgerFootprint, Limits, Memo, Operation, OperationBody, Preconditions,
+        SequenceNumber, SorobanResources, SorobanTransactionData, Transaction, TransactionExt,
+        TransactionMeta, TransactionMetaV3, TtlEntry, WriteXdr,
+    },
 };
 use clap::{command, Parser};
 
@@ -127,6 +130,7 @@ impl NetworkRunnable for Cmd {
         config: Option<&config::Args>,
     ) -> Result<TxnResult<u32>, Self::Error> {
         let config = config.unwrap_or(&self.config);
+        let print = Print::new(args.map_or(false, |a| a.quiet));
         let network = config.get_network()?;
         tracing::trace!(?network);
         let keys = self.key.parse_keys(&config.locator, &network)?;
@@ -184,7 +188,8 @@ impl NetworkRunnable for Cmd {
 
         let events = res.events()?;
         if !events.is_empty() {
-            tracing::info!("Events:\n {events:#?}");
+            crate::log::event::all(&events);
+            crate::log::event::contract(&events, &print);
         }
         let meta = res.result_meta.ok_or(Error::MissingOperationResult)?;
 

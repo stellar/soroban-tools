@@ -1,14 +1,8 @@
-use clap::{command, Parser};
-
-use std::fmt::Debug;
-
-use super::new;
-
-#[derive(Parser, Debug, Clone)]
+#[derive(clap::Parser, Debug, Clone)]
 #[group(skip)]
 pub struct Cmd {
     #[command(flatten)]
     pub args: super::args::Args,
     #[command(flatten)]
-    pub op: new::set_options::Args,
+    pub op: super::new::set_options::Cmd,
 }

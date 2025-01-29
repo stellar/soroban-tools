@@ -6,9 +6,9 @@ custom_edit_url: https://github.com/stellar/stellar-cli/edit/main/cookbook/tx-ne
 ---
 
 So far the examples of the CLI interacting with the blockchain have been through the `contract` command. Uploading contracts, deploying contracts, and invoking them.
-Each of these are different types of transactions, which must be signed and submitted to the network (and in the case of contract related transations simulated first).
+Each of these are different types of transactions, which must be signed and submitted to the network (and in the case of contract related transactions simulated first).
 
-Technically these three are different operations, of which a transaction can contain upto 100 operations. However, in the case of contract related operations a transaction is limited to just one.
+Technically these three are different operations, of which a transaction can contain up to 100 operations. However, in the case of contract related operations a transaction is limited to just one.
 
 So for all other transactions the CLI provides the `tx` subcommands. These are:
 
@@ -26,15 +26,14 @@ For the following examples we will use the following accounts:
 stellar keys generate --fund alice --network testnet
 stellar keys generate --no-fund bob
 # You can add a public key to the keys
-stellar keys add --public-key GCXLHURQS5LX77PBQWEGJLYDPXGVR2F5ME2OPBWQBGJKG2IOBBO2XY5O charlie
+stellar keys add --public-key GBUG7QTBTT47XVDVE6RZYWRUZBPLOIO57INE6LYZDMIXMMDCREQRUQKI charlie
 ## and use testnet
 stellar network use testnet
 ```
 
 ### Create Account
 
-Creates and funds a new Stellar account. Above `alice` was funded by friendbot[citation here]. However,
-`bob` and `charlie` were not. So we can use the `create-account` command to fund them.
+Creates and funds a new Stellar account. Above `alice` was funded by [friendbot](https://developers.stellar.org/docs/learn/fundamentals/networks#friendbot). However, `bob` and `charlie` were not. So we can use the `create-account` command to fund them.
 
 `bob` will receive 10 XLM and `charlie` will get 1 XLM.
 
@@ -89,7 +88,7 @@ Merge one account into another, transferring all XLM.
 ```sh
 stellar tx new account-merge \
   --source bob \
-  --account chalrie
+  --account charlie
 ```
 
 Notes:
@@ -102,7 +101,7 @@ Modify authorization flags on a trustline:
 ```sh
 stellar tx new set-trustline-flags \
   --source alice \
-  --asset USDC:GCXLHURQS5LX77PBQWEGJLYDPXGVR2F5ME2OPBWQBGJKG2IOBBO2XY5O \
+  --asset USDC:GBUG7QTBTT47XVDVE6RZYWRUZBPLOIO57INE6LYZDMIXMMDCREQRUQKI \
   --trustor charlie \
   --set-authorize \
   --set-authorize-to-maintain-liabilities \
@@ -125,7 +124,7 @@ Configure account settings:
 ```sh
 stellar tx new set-options \
   --source alice \
-  --inflation-dest GCXLHURQS5LX77PBQWEGJLYDPXGVR2F5ME2OPBWQBGJKG2IOBBO2XY5O \
+  --inflation-dest GBUG7QTBTT47XVDVE6RZYWRUZBPLOIO57INE6LYZDMIXMMDCREQRUQKI \
   --home-domain "example.com" \
   --master-weight 100 \
   --med-threshold 100 \

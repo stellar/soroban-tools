@@ -1,17 +1,24 @@
 use std::str::FromStr;
 
-use crate::xdr::{self, AlphaNum12, AlphaNum4, AssetCode};
+use crate::{
+    config::{address, locator},
+    xdr::{self, AlphaNum12, AlphaNum4, AssetCode},
+};
 
 #[derive(Clone, Debug)]
-pub struct Asset(pub xdr::Asset);
+pub enum Asset {
+    Asset(AssetCode, address::UnresolvedMuxedAccount),
+    Native,
+}
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("cannot parse asset: {0}, expected format: 'native' or 'code:issuer'")]
     CannotParseAsset(String),
-
     #[error(transparent)]
     Xdr(#[from] xdr::Error),
+    #[error(transparent)]
+    Address(#[from] address::Error),
 }
 
 impl FromStr for Asset {
@@ -19,32 +26,31 @@ impl FromStr for Asset {
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         if value == "native" {
-            return Ok(Asset(xdr::Asset::Native));
+            return Ok(Asset::Native);
         }
         let mut iter = value.splitn(2, ':');
         let (Some(code), Some(issuer), None) = (iter.next(), iter.next(), iter.next()) else {
             return Err(Error::CannotParseAsset(value.to_string()));
         };
-        let issuer = issuer.parse()?;
-        Ok(Asset(match code.parse()? {
-            AssetCode::CreditAlphanum4(asset_code) => {
-                xdr::Asset::CreditAlphanum4(AlphaNum4 { asset_code, issuer })
-            }
-            AssetCode::CreditAlphanum12(asset_code) => {
-                xdr::Asset::CreditAlphanum12(AlphaNum12 { asset_code, issuer })
-            }
-        }))
+        Ok(Asset::Asset(code.parse()?, issuer.parse()?))
     }
 }
 
-impl From<Asset> for xdr::Asset {
-    fn from(builder: Asset) -> Self {
-        builder.0
-    }
-}
-
-impl From<&Asset> for xdr::Asset {
-    fn from(builder: &Asset) -> Self {
-        builder.clone().into()
+impl Asset {
+    pub fn resolve(&self, locator: &locator::Args) -> Result<xdr::Asset, Error> {
+        Ok(match self {
+            Asset::Asset(code, issuer) => {
+                let issuer = issuer.resolve_muxed_account(locator, None)?.account_id();
+                match code.clone() {
+                    AssetCode::CreditAlphanum4(asset_code) => {
+                        xdr::Asset::CreditAlphanum4(AlphaNum4 { asset_code, issuer })
+                    }
+                    AssetCode::CreditAlphanum12(asset_code) => {
+                        xdr::Asset::CreditAlphanum12(AlphaNum12 { asset_code, issuer })
+                    }
+                }
+            }
+            Asset::Native => xdr::Asset::Native,
+        })
     }
 }
