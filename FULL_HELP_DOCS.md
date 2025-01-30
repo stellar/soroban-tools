@@ -55,7 +55,6 @@ Anything after the `--` double dash (the "slop") is parsed as arguments to the c
 * `completion` — Print shell completion code for the specified shell
 * `cache` — Cache for transactions and contract specs
 * `version` — Print version information
-* `licenses` — Show dependency licenses
 
 ###### **Options:**
 
@@ -2483,18 +2482,6 @@ Read cached action
 Print version information
 
 **Usage:** `stellar version`
-
-
-
-## `stellar licenses`
-
-Show dependency licenses
-
-**Usage:** `stellar licenses [OPTIONS]`
-
-###### **Options:**
-
-* `-v`, `--verbose` — Display the license text
 
 
 

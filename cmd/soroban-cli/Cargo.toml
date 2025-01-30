@@ -123,12 +123,10 @@ zeroize = "1.8.1"
 keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service"] }
 whoami = "1.5.2"
 serde_with = "3.11.0"
-license-fetcher = "0.5.0"
 
 
 [build-dependencies]
 crate-git-revision = "0.0.6"
-license-fetcher = { version = "0.5.0", features = ["build"] }
 serde.workspace = true
 thiserror.workspace = true
 

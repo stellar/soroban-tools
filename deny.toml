@@ -112,7 +112,6 @@ allow = [
     "BSD-2-Clause",
     "CC0-1.0",
     "Unicode-3.0",
-    "BSL-1.0",
 ]
 # List of explicitly disallowed licenses
 # See https://spdx.org/licenses/ for list of possible licenses
@@ -314,8 +313,6 @@ skip = [
     { crate = "bitflags", reason = "too many", version = "=1.3.2" },
 
     { crate = "socket2", reason = "too many", version = "=0.4.10" },
-
-    { crate = "miniz_oxide", reason = "too many", version = "=0.7.4" },
 ]
 # Similarly to `skip` allows you to skip certain crates during duplicate
 # detection. Unlike skip, it also includes the entire tree of transitive
