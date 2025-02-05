@@ -8,21 +8,11 @@ on:
 jobs:
   test:
     name: test generated libraries
-    runs-on: ubuntu-22.04
-    services:
-      rpc:
-        image: stellar/quickstart:testing
-        ports:
-          - 8000:8000
-        env:
-          ENABLE_LOGS: true
-          NETWORK: local
-          ENABLE_SOROBAN_RPC: true
-        options: >-
-          --health-cmd "curl --no-progress-meter --fail-with-body -X POST \"http://localhost:8000/rpc\" -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"id\":8675309,\"method\":\"getNetwork\"}' && curl --no-progress-meter \"http://localhost:8000/friendbot\" | grep '\"invalid_field\": \"addr\"'"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 50
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest-16-cores, macos-13, windows-latest-8-cores]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/setup-node@v4
         with:
@@ -42,5 +32,116 @@ jobs:
       - run: cargo build
       - run: rustup target add wasm32-unknown-unknown
       - run: make build-test-wasms
-      - run: npm ci && npm run test
+      - run: npm ci
+        if: runner.os != 'windows'
         working-directory: cmd/crates/soroban-spec-typescript/ts-tests
+      - run: |
+          Write-Host "Running npm build"
+          npm ci --ignore-scripts
+        if: runner.os == 'windows'
+        working-directory: cmd/crates/soroban-spec-typescript/ts-tests
+      - name: Setup docker (missing on MacOS)
+        if: runner.os == 'macos'
+        run: |
+          brew install docker
+          brew install colima
+          colima start
+      - name: Install wsl
+        if: runner.os ==  'windows'
+        uses: vedantmgoyal9/setup-wsl2@4edf825c69cdaad7d6a852f57c9446f83fea8b91
+        # https://github.com/vedantmgoyal9/setup-wsl2/issues/3
+      - name: Enable systemd
+        if: runner.os == 'windows'
+        run: |
+          echo "[boot]
+          systemd=true" > /etc/wsl.conf
+        shell: wsl-run {0}
+      - name: Restart WSL
+        if: runner.os == 'windows'
+        run: |
+          Write-Output 'Restarting WSL...'
+          wsl --shutdown
+          # https://learn.microsoft.com/en-us/windows/wsl/wsl-config#the-8-second-rule-for-configuration-changes
+          # although the documentation says 8 seconds, we wait for 10 seconds to be safe
+          Start-Sleep -Seconds 10
+      - name: Install Docker
+        if: runner.os == 'windows'
+        run: |
+          systemctl list-unit-files --type=service
+          
+          # Add Docker's official GPG key:
+          sudo apt-get update
+          sudo apt-get install --yes ca-certificates curl
+          sudo install -m 0755 -d /etc/apt/keyrings
+          sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+          sudo chmod a+r /etc/apt/keyrings/docker.asc
+          
+          # Add the repository to Apt sources:
+          echo \
+          "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+          $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+          sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+          sudo apt-get update
+          sudo apt-get install --yes docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+          sudo systemctl start docker.socket
+          sudo systemctl start docker.service
+          sudo systemctl status docker.service
+          sudo docker run hello-world
+        shell: wsl-run {0}
+      - run: |
+          docker run -d --name quickstart -p 8000:8000 -e ENABLE_LOGS=true -e NETWORK=local -e ENABLE_SOROBAN_RPC=true --health-cmd "curl --no-progress-meter --fail-with-body -X POST \"http://localhost:8000/soroban/rpc\" -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"id\":8675309,\"method\":\"getNetwork\"}' && curl --no-progress-meter \"http://localhost:8000/friendbot\" | grep '\"invalid_field\": \"addr\"'" --health-interval 10s --health-timeout 5s --health-retries 50 stellar/quickstart:testing
+        if: runner.os !=  'windows'
+        shell: bash
+      - run: |
+          while true; do
+            status=`docker inspect -f {{.State.Health.Status}} quickstart`
+            echo "quickstart status: $status"
+            if [ "$status" == "healthy" ]; then
+              break
+            fi
+            sleep 1;
+          done;
+        if: runner.os !=  'windows'
+        shell: bash
+      - run: |
+          docker run -d --name quickstart -p 8000:8000 -e ENABLE_LOGS=true -e NETWORK=local -e ENABLE_SOROBAN_RPC=true --health-cmd "curl --no-progress-meter --fail-with-body -X POST \"http://localhost:8000/soroban/rpc\" -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"id\":8675309,\"method\":\"getNetwork\"}' && curl --no-progress-meter \"http://localhost:8000/friendbot\" | grep '\"invalid_field\": \"addr\"'" --health-interval 10s --health-timeout 5s --health-retries 50 stellar/quickstart:testing
+        if: runner.os ==  'windows'
+        shell: wsl-run {0}
+      - run: |
+          while true; do
+            status=`docker inspect -f {{.State.Health.Status}} quickstart`
+            echo "quickstart status: $status"
+            if [ "$status" == "healthy" ]; then
+              break
+            fi
+            sleep 1;
+          done;
+        if: runner.os ==  'windows'
+        shell: wsl-run {0}
+      - run: docker container inspect quickstart
+        shell: wsl-run {0}
+      - run: |
+          Write-Host "Generating keys"
+          $env:SOROBAN_SECRET_KEY='SC5NRVW24PTAE2TM4M7VVZSCYUNVCBSZOSNRSHFU2XVYZGNMFV6YVLLX'
+          cargo run -p stellar-cli -- keys add --secret-key root
+          Invoke-RestMethod -Uri http://localhost:8000/friendbot?addr=GBCNICNDLG2SQ3AIHJTB3G7AMGR4SZZJISYYQENZR7TETHTZHRCSEAWC
+          Write-Host "Deploying contract"
+          cargo run -p stellar-cli -- contract deploy --quiet --alias custom-types --source root --wasm ../../../../target/wasm32-unknown-unknown/test-wasms/test_custom_types.wasm --ignore-checks 
+          Write-Host "Generating bindings"
+          cargo run --quiet -p stellar-cli -- contract bindings typescript --contract-id custom-types --output-dir ./node_modules/test-custom-types --overwrite
+          cd ./node_modules/test-custom-types
+          npm install 
+          npm run build
+        if: runner.os ==  'windows'
+        working-directory: cmd/crates/soroban-spec-typescript/ts-tests
+      - run: npm run test
+        working-directory: cmd/crates/soroban-spec-typescript/ts-tests
+      - name: quickstart logs
+        if: always() && runner.os != 'windows'
+        run: docker logs quickstart
+      - name: quickstart logs
+        if: always() && runner.os == 'windows'
+        run: |
+          docker container inspect quickstart
+          docker container logs quickstart -n 1000
+        shell: wsl-run {0}
