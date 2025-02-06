@@ -5,5 +5,5 @@ set -e
 echo '+cargo fmt --check'
 cargo fmt --check || (cargo fmt && exit 1)
 
-echo '+cargo run --bin doc-gen --features clap-markdown'
-cargo run --bin doc-gen --features clap-markdown
+echo '+cargo md-gen'
+cargo md-gen

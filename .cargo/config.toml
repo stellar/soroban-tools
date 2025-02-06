@@ -2,7 +2,7 @@
 
 [alias] # command aliases
 f = "fmt"
-md-gen = "run --bin doc-gen --features clap-markdown"
+md-gen = "test --package soroban-cli --lib -- test::md_gen --exact --ignored"
 s = "run --quiet --"
 # b = "build"
 # c = "check"
