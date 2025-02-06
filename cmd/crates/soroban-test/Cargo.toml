@@ -25,6 +25,7 @@ sep5 = { workspace = true }
 soroban-cli = { workspace = true }
 soroban-rpc = { workspace = true }
 
+
 thiserror = "1.0.31"
 sha2 = "0.10.6"
 assert_cmd = "2.0.4"
