@@ -45,6 +45,12 @@ pub enum ComplexEnum {
     Void,
 }
 
+#[contracttype]
+pub enum RecursiveEnum {
+    Vec(Vec<RecursiveEnum>),
+    Void,
+}
+
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[repr(u32)]
@@ -101,6 +107,10 @@ impl Contract {
 
     pub fn complex(_env: Env, complex: ComplexEnum) -> ComplexEnum {
         complex
+    }
+
+    pub fn recursive_enum(_env: Env, recursive: RecursiveEnum) -> RecursiveEnum {
+        recursive
     }
 
     pub fn addresse(_env: Env, addresse: Address) -> Address {

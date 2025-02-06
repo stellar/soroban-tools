@@ -52,6 +52,13 @@ async fn complex_enum_help() {
 }
 
 #[tokio::test]
+async fn recursive_enum_help() {
+    let output = invoke_custom("recursive_enum", "--help").await.unwrap();
+    assert!(output.contains(r#"--complex"#,));
+    assert!(output.contains(r#""Void"'"#));
+}
+
+#[tokio::test]
 async fn multi_arg_failure() {
     assert!(matches!(
         invoke_custom("multi_args", "--b").await.unwrap_err(),
