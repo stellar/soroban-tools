@@ -158,26 +158,16 @@ impl Cmd {
 
         let response = self.run_against_rpc_server(None, None).await?;
 
-        for event in &response.events {
-            match self.output {
-                // Should we pretty-print the JSON like we're doing here or just
-                // dump an event in raw JSON on each line? The latter is easier
-                // to consume programmatically.
-                OutputFormat::Json => {
-                    println!(
-                        "{}",
-                        serde_json::to_string_pretty(&event).map_err(|e| {
-                            Error::InvalidJson {
-                                debug: format!("{event:#?}"),
-                                error: e,
-                            }
-                        })?,
-                    );
-                }
-                OutputFormat::Plain => println!("{event}"),
-                OutputFormat::Pretty => event.pretty_print()?,
-            }
-        }
+        // Convert the entire response to JSON
+        let json_response =
+            serde_json::to_string_pretty(&response).map_err(|e| Error::InvalidJson {
+                debug: format!("{response:#?}"),
+                error: e,
+            })?;
+
+        // Print the JSON response
+        println!("{}", json_response);
+
         Ok(())
     }
 
