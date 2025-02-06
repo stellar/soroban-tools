@@ -131,6 +131,7 @@ zeroize = "1.8.1"
 keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service"] }
 whoami = "1.5.2"
 serde_with = "3.11.0"
+jsonc-parser = { version = "0.26.2", features = ["cst"] }
 
 
 [build-dependencies]

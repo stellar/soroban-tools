@@ -18,6 +18,7 @@ pub mod plugin;
 pub mod snapshot;
 pub mod tx;
 pub mod version;
+pub mod vscode;
 
 pub mod txn_result;
 
@@ -121,6 +122,7 @@ impl Root {
             Cmd::Tx(tx) => tx.run(&self.global_args).await?,
             Cmd::Cache(cache) => cache.run()?,
             Cmd::Env(env) => env.run(&self.global_args)?,
+            Cmd::Vscode(vscode) => vscode.run()?,
         };
         Ok(())
     }
@@ -184,6 +186,10 @@ pub enum Cmd {
 
     /// Print version information
     Version(version::Cmd),
+
+    /// Edit vscode settings
+    #[command(subcommand)]
+    Vscode(vscode::Cmd),
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -224,6 +230,9 @@ pub enum Error {
 
     #[error(transparent)]
     Env(#[from] env::Error),
+
+    #[error(transparent)]
+    Vscode(#[from] vscode::Error),
 }
 
 #[async_trait]

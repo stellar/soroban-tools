@@ -1,0 +1,37 @@
+{
+    "tx": {
+      "tx": {
+        "source_account": "GC6U2VK33JYIWGRV2Q64IBUK5U7CCGRL2NLOQJTQTNWMHNW34ZVUEG7T",
+        "fee": 5000,
+        "seq_num": 61499636711945,
+        "cond": {
+          "time": {
+            "min_time": 0,
+            "max_time": 1733772281
+          }
+        },
+        "memo": {
+          "text": "Load lumens"
+        },
+        "operations": [
+          {
+            "source_account": null,
+            "body": {
+              "payment": {
+                "destination": "GCVEH6AZQX36XR2SLGVOABKNB3YC3SBUAKIMPPLIGV3E2UCKMOET32YU",
+                "asset": "native",
+                "amount": 100000000
+              }
+            }
+          }
+        ],
+        "ext": "v0"
+      },
+      "signatures": [
+        {
+          "hint": "26f802ad",
+          "signature": "b26cde9fc068173241013279207343d17124488de0d44e43858faab093aca30efee4dbbce8a9fd96b11b7e36bd21db355c77fbe9bc2c493545b1bf19e31f5109"
+        }
+      ]
+    }
+  }

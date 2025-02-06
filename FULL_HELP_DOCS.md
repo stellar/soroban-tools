@@ -55,6 +55,7 @@ Anything after the `--` double dash (the "slop") is parsed as arguments to the c
 * `completion` — Print shell completion code for the specified shell
 * `cache` — Cache for transactions and contract specs
 * `version` — Print version information
+* `vscode` — Edit vscode settings
 
 ###### **Options:**
 
@@ -2483,6 +2484,30 @@ Read cached action
 Print version information
 
 **Usage:** `stellar version`
+
+
+
+## `stellar vscode`
+
+Edit vscode settings
+
+**Usage:** `stellar vscode <COMMAND>`
+
+###### **Subcommands:**
+
+* `setup` — Setup Vs Code to use transaction schema
+
+
+
+## `stellar vscode setup`
+
+Setup Vs Code to use transaction schema
+
+**Usage:** `stellar vscode setup [OPTIONS]`
+
+###### **Options:**
+
+* `--settings <SETTINGS>` — Path to settings file. Default is global install
 
 
 
