@@ -1,10 +1,9 @@
-use std::path::Path;
-
 use soroban_cli::{
     commands::contract,
     config::{locator::KeyType, secret::Secret},
 };
 use soroban_test::{TestEnv, Wasm, TEST_ACCOUNT};
+use std::path::Path;
 
 pub const CUSTOM_TYPES: &Wasm = &Wasm::Custom("test-wasms", "test_custom_types");
 
@@ -54,10 +53,8 @@ pub async fn invoke_custom(
     let mut i: contract::invoke::Cmd =
         sandbox.cmd_with_config(&["--id", id, "--", func, arg], None);
     i.wasm = Some(wasm.to_path_buf());
-    sandbox
-        .run_cmd_with(i, TEST_ACCOUNT)
-        .await
-        .map(|r| r.into_result().unwrap())
+    let s = sandbox.run_cmd_with(i, TEST_ACCOUNT).await;
+    s.map(|tx| tx.into_result().unwrap())
 }
 
 pub const DEFAULT_CONTRACT_ID: &str = "CDR6QKTWZQYW6YUJ7UP7XXZRLWQPFRV6SWBLQS4ZQOSAF4BOUD77OO5Z";

@@ -6,7 +6,6 @@ use std::str::FromStr;
 use std::{fmt::Debug, fs, io};
 
 use clap::{arg, command, Parser, ValueEnum};
-
 use soroban_rpc::{Client, SimulateHostFunctionResult, SimulateTransactionResponse};
 use soroban_spec::read::FromWasmError;
 
@@ -221,7 +220,7 @@ impl NetworkRunnable for Cmd {
         let spec_entries = self.spec_entries()?;
         if let Some(spec_entries) = &spec_entries {
             // For testing wasm arg parsing
-            let _ = build_host_function_parameters(&contract_id, &self.slop, spec_entries, config)?;
+            build_host_function_parameters(&contract_id, &self.slop, spec_entries, config)?;
         }
         let client = network.rpc_client()?;
 
@@ -235,8 +234,10 @@ impl NetworkRunnable for Cmd {
         .await
         .map_err(Error::from)?;
 
-        let (function, spec, host_function_params, signers) =
+        let params =
             build_host_function_parameters(&contract_id, &self.slop, &spec_entries, config)?;
+
+        let (function, spec, host_function_params, signers) = params;
 
         let assembled = self
             .simulate(&host_function_params, &default_account_entry(), &client)

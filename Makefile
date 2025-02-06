@@ -48,7 +48,8 @@ generate-full-help-doc:
 	cargo run --bin doc-gen --features clap-markdown
 
 test: build-test
-	cargo test --workspace
+	cargo test --workspace --exclude soroban-test
+	cargo test -p soroban-test -- --skip integration::
 
 e2e-test:
 	cargo test --features it --test it -- integration

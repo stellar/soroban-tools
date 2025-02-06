@@ -2,10 +2,16 @@ use clap::CommandFactory;
 use dotenvy::dotenv;
 use tracing_subscriber::{fmt, EnvFilter};
 
+use crate::commands::contract::arg_parsing::Error::HelpMessage;
+use crate::commands::contract::deploy::wasm::Error::ArgParse;
+use crate::commands::contract::invoke::Error::ArgParsing;
+use crate::commands::contract::Error::{Deploy, Invoke};
+use crate::commands::Error::Contract;
 use crate::config::Config;
 use crate::print::Print;
 use crate::upgrade_check::upgrade_check;
 use crate::{commands, Root};
+use std::error::Error;
 
 #[tokio::main]
 pub async fn main() {
@@ -86,6 +92,17 @@ pub async fn main() {
 
     let printer = Print::new(root.global_args.quiet);
     if let Err(e) = root.run().await {
+        // TODO: source is None (should be HelpMessage)
+        let _source = commands::Error::source(&e);
+        // TODO use source instead
+        if let Contract(Invoke(ArgParsing(HelpMessage(help)))) = e {
+            println!("{help}");
+            std::process::exit(1);
+        }
+        if let Contract(Deploy(ArgParse(HelpMessage(help)))) = e {
+            println!("{help}");
+            std::process::exit(1);
+        }
         printer.errorln(format!("error: {e}"));
         std::process::exit(1);
     }

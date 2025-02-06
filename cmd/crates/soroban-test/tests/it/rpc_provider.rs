@@ -31,11 +31,13 @@ async fn test_use_rpc_provider_with_auth_header() {
 }
 
 fn mock_generate_account(server: &MockServer) -> Mock {
+    let cli_version = soroban_cli::commands::version::pkg();
+    let agent = format!("soroban-cli/{cli_version}");
     server.mock(|when, then| {
         when.method(GET)
             .path("/friendbot")
             .header("accept", "*/*")
-            .header("user-agent", "soroban-cli/22.0.1"); //update this to be future proof
+            .header("user-agent", agent);
         then.status(200);
     })
 }

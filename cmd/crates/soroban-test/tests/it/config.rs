@@ -19,20 +19,26 @@ fn ls(sandbox: &TestEnv) -> Vec<String> {
         .collect::<Vec<_>>()
 }
 
+pub const NETWORKS: &str = r"local
+futurenet
+mainnet
+testnet
+";
+
 #[test]
 fn set_and_remove_network() {
     TestEnv::with_default(|sandbox| {
-        add_network(sandbox, "local");
-        let dir = sandbox.dir().join(".soroban").join("network");
+        add_network(sandbox, "custom");
+        let dir = sandbox.dir().join(".stellar").join("network");
         let mut read_dir = std::fs::read_dir(dir).unwrap();
         let file = read_dir.next().unwrap().unwrap();
-        assert_eq!(file.file_name().to_str().unwrap(), "local.toml");
+        assert_eq!(file.file_name().to_str().unwrap(), "custom.toml");
         let res = ls(sandbox);
-        assert_eq!(res[0], "local");
+        assert_eq!(res[0], "custom");
         sandbox
             .new_assert_cmd("network")
             .arg("rm")
-            .arg("local")
+            .arg("custom")
             .assert()
             .success();
 
@@ -40,37 +46,7 @@ fn set_and_remove_network() {
             .new_assert_cmd("network")
             .arg("ls")
             .assert()
-            .stdout("\n");
-    });
-}
-
-#[test]
-fn use_default_futurenet() {
-    TestEnv::with_default(|sandbox| {
-        sandbox
-            .new_assert_cmd("keys")
-            .args(["generate", "alice", "--network", "futurenet"])
-            .assert()
-            .success();
-        let dir = sandbox.dir().join(".soroban").join("network");
-        let mut read_dir = std::fs::read_dir(dir).unwrap();
-        let file = read_dir.next().unwrap().unwrap();
-        assert_eq!(file.file_name().to_str().unwrap(), "futurenet.toml");
-    });
-}
-
-#[test]
-fn use_default_testnet() {
-    TestEnv::with_default(|sandbox| {
-        sandbox
-            .new_assert_cmd("keys")
-            .args(["generate", "alice", "--network", "testnet"])
-            .assert()
-            .success();
-        let dir = sandbox.dir().join(".soroban").join("network");
-        let mut read_dir = std::fs::read_dir(dir).unwrap();
-        let file = read_dir.next().unwrap().unwrap();
-        assert_eq!(file.file_name().to_str().unwrap(), "testnet.toml");
+            .stdout(NETWORKS);
     });
 }
 
@@ -118,7 +94,7 @@ fn set_and_remove_global_network() {
         .arg("ls")
         .arg("--global")
         .assert()
-        .stdout("global\n");
+        .stdout(format!("global\n{NETWORKS}"));
 
     sandbox
         .new_assert_cmd("network")
@@ -134,7 +110,7 @@ fn set_and_remove_global_network() {
         .env("XDG_CONFIG_HOME", dir.to_str().unwrap())
         .arg("ls")
         .assert()
-        .stdout("\n");
+        .stdout(NETWORKS);
 }
 
 #[test]
@@ -142,15 +118,35 @@ fn multiple_networks() {
     let sandbox = TestEnv::default();
     let ls = || -> Vec<String> { ls(&sandbox) };
 
-    add_network(&sandbox, "local");
+    println!("{:#?}", ls());
+    add_network(&sandbox, "custom");
     println!("{:#?}", ls());
     add_network(&sandbox, "local2");
 
-    assert_eq!(ls().as_slice(), ["local".to_owned(), "local2".to_owned()]);
+    assert_eq!(
+        ls().as_slice(),
+        [
+            "custom".to_owned(),
+            "local2".to_owned(),
+            "local".to_owned(),
+            "futurenet".to_owned(),
+            "mainnet".to_owned(),
+            "testnet".to_owned()
+        ]
+    );
 
-    sandbox.cmd::<network::rm::Cmd>("local").run().unwrap();
+    sandbox.cmd::<network::rm::Cmd>("custom").run().unwrap();
 
-    assert_eq!(ls().as_slice(), ["local2".to_owned()]);
+    assert_eq!(
+        ls().as_slice(),
+        [
+            "local2".to_owned(),
+            "local".to_owned(),
+            "futurenet".to_owned(),
+            "mainnet".to_owned(),
+            "testnet".to_owned()
+        ]
+    );
 
     let sub_dir = sandbox.dir().join("sub_directory");
     fs::create_dir(&sub_dir).unwrap();
@@ -168,7 +164,17 @@ fn multiple_networks() {
     .run()
     .unwrap();
 
-    assert_eq!(ls().as_slice(), ["local2".to_owned(), "local3".to_owned()]);
+    assert_eq!(
+        ls().as_slice(),
+        [
+            "local2".to_owned(),
+            "local3".to_owned(),
+            "local".to_owned(),
+            "futurenet".to_owned(),
+            "mainnet".to_owned(),
+            "testnet".to_owned()
+        ]
+    );
 }
 
 #[test]
@@ -205,7 +211,7 @@ fn generate_key() {
         .assert()
         .stdout(predicates::str::contains("test_2\n"));
     let file_contents =
-        fs::read_to_string(sandbox.dir().join(".soroban/identity/test_2.toml")).unwrap();
+        fs::read_to_string(sandbox.dir().join(".stellar/identity/test_2.toml")).unwrap();
     assert_eq!(
         file_contents,
         format!("seed_phrase = \"{DEFAULT_SEED_PHRASE}\"\n")
@@ -368,6 +374,7 @@ fn set_default_identity() {
 
     sandbox
         .new_assert_cmd("env")
+        .env_remove("SOROBAN_ACCOUNT")
         .assert()
         .stdout(predicate::str::contains("STELLAR_ACCOUNT=alice"))
         .success();

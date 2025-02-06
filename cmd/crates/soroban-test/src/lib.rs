@@ -227,7 +227,7 @@ impl TestEnv {
         let cmd = self.cmd_with_config::<I, invoke::Cmd>(command_str, None);
         self.run_cmd_with(cmd, source)
             .await
-            .map(|r| r.into_result().unwrap())
+            .map(|tx| tx.into_result().unwrap())
     }
 
     /// A convenience method for using the invoke command.
