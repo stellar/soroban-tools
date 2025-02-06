@@ -1,0 +1,70 @@
+---
+title: Working with Multisig
+hide_table_of_contents: false
+description: Create multisig accounts and sign transactions on the Stellar ledger
+---
+
+### Working with Multisig
+
+**Multisig Overview**  
+Multisig accounts provide an additional layer of security by requiring multiple signatures to authorize a transaction. This feature is particularly useful for organizations or groups where multiple parties must agree before any funds can be moved.
+
+---
+
+#### Creating a Multisig Account
+
+To create a multisig account on the Stellar ledger, use the `stellar account create` command with the desired thresholds. Here's how to do it:
+
+```bash
+stellar account create \
+    --source S... \
+    --network testnet \
+    --threshold 2 \
+    --signer S1...,S2...,S3...
+```
+
+**Parameters:**
+
+- `--threshold`: The number of signatures required to authorize a transaction.
+- `--signer`: The public keys of the signers involved in the multisig account.
+
+:::note
+Ensure that the total number of signers is greater than or equal to the threshold to allow successful transaction signing.
+:::
+
+---
+
+#### Signing Transactions with Multisig
+
+Once you have a multisig account set up, you can sign transactions using the keys of the signers. Here’s an example of how to sign a transaction with multiple keys:
+
+1. Create the transaction that requires multisig signing:
+
+```bash
+stellar transaction create \
+    --source S... \
+    --network testnet \
+    --amount 10 \
+    --destination D...
+```
+
+2. Sign the transaction with the required number of signers:
+
+```bash
+stellar transaction sign \
+    --transaction [TRANSACTION_HASH] \
+    --signer S1... \
+    --network testnet
+```
+
+Repeat this step for each signer until you have the required number of signatures.
+
+3. Submit the signed transaction:
+
+```bash
+stellar transaction submit \
+    --transaction [TRANSACTION_HASH] \
+    --network testnet
+```
+
+---
