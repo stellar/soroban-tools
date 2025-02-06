@@ -20,7 +20,7 @@ use stellar_xdr::curr::{
     LedgerKeyClaimableBalance, LedgerKeyConfigSetting, LedgerKeyContractCode,
     LedgerKeyContractData, LedgerKeyData, LedgerKeyLiquidityPool, LedgerKeyOffer,
     LedgerKeyTrustLine, LedgerKeyTtl, Limited, Limits, ReadXdr, ScAddress, ScContractInstance,
-    ScVal,
+    ScVal, TrustLineAsset,
 };
 use tokio::fs::OpenOptions;
 use tokio::io::BufReader;
@@ -289,7 +289,14 @@ impl Cmd {
                     }
                     let keep = match &key {
                         LedgerKey::Account(k) => current.account_ids.contains(&k.account_id),
-                        LedgerKey::Trustline(k) => current.account_ids.contains(&k.account_id),
+                        LedgerKey::Trustline(k) => {
+                            current.account_ids.contains(&k.account_id) ||
+                            current.account_ids.iter().any(|id| match &k.asset {
+                                TrustLineAsset::CreditAlphanum4(a4) => a4.issuer == *id,
+                                TrustLineAsset::CreditAlphanum12(a12) => a12.issuer == *id,
+                                _ => false,  // Ignore non-credit assets
+                            })
+                        },
                         LedgerKey::ContractData(k) => current.contract_ids.contains(&k.contract),
                         LedgerKey::ContractCode(e) => current.wasm_hashes.contains(&e.hash),
                         _ => false,
@@ -299,7 +306,7 @@ impl Cmd {
                     }
                     seen.insert(key.clone());
                     let Some(val) = val else { continue };
-                    match &val.data {
+                    let should_save = match &val.data {
                         LedgerEntryData::ContractData(e) => {
                             // If a contract instance references contract
                             // executable stored in another ledger entry, add
@@ -319,7 +326,7 @@ impl Cmd {
                                                 hex::encode(hash)
                                             ));
                                         }
-                                    }
+                                    } 
                                     ScVal::ContractInstance(ScContractInstance {
                                         executable: ContractExecutable::StellarAsset,
                                         storage: Some(storage),
@@ -335,9 +342,7 @@ impl Cmd {
                                                 Asset::CreditAlphanum4(a4) => Some(a4.issuer),
                                                 Asset::CreditAlphanum12(a12) => Some(a12.issuer),
                                             } {
-                                                print.infoln(format!(
-                                                    "Adding asset issuer {issuer} to search"
-                                                ));
+                                                print.infoln(format!("Adding asset issuer {issuer} to search"));
                                                 next.account_ids.insert(issuer);
                                             }
                                         }
@@ -345,14 +350,17 @@ impl Cmd {
                                     _ => {}
                                 }
                             }
-                            keep
+                            true
                         }
-                        _ => false,
+                        LedgerEntryData::ContractCode(_) => true, 
+                        _ => false
                     };
-                    snapshot
-                        .ledger_entries
-                        .push((Box::new(key), (Box::new(val), Some(u32::MAX))));
-                    count_saved += 1;
+                    if should_save {
+                        snapshot
+                            .ledger_entries
+                            .push((Box::new(key), (Box::new(val), Some(u32::MAX))));
+                        count_saved += 1;
+                    }
                 }
                 if count_saved > 0 {
                     print.infoln(format!("Found {count_saved} entries"));
