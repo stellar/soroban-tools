@@ -1,6 +1,8 @@
 use super::global;
 
 pub mod args;
+pub mod decode;
+pub mod encode;
 pub mod hash;
 pub mod help;
 pub mod new;
@@ -28,6 +30,8 @@ pub enum Cmd {
     Sign(sign::Cmd),
     /// Simulate a transaction envelope from stdin
     Simulate(simulate::Cmd),
+    Decode(decode::Cmd),
+    Encode(encode::Cmd),
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -46,6 +50,10 @@ pub enum Error {
     Args(#[from] args::Error),
     #[error(transparent)]
     Simulate(#[from] simulate::Error),
+    #[error(transparent)]
+    Decode(#[from] decode::Error),
+    #[error(transparent)]
+    Encode(#[from] encode::Error),
 }
 
 impl Cmd {
@@ -57,6 +65,8 @@ impl Cmd {
             Cmd::Send(cmd) => cmd.run(global_args).await?,
             Cmd::Sign(cmd) => cmd.run(global_args).await?,
             Cmd::Simulate(cmd) => cmd.run(global_args).await?,
+            Cmd::Decode(cmd) => cmd.run()?,
+            Cmd::Encode(cmd) => cmd.run()?,
         };
         Ok(())
     }
