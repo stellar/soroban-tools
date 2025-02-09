@@ -75,7 +75,7 @@ jobs:
 
     - name: Build provenance for attestation (release only)
       if: github.event_name == 'release'
-      uses: actions/attest-build-provenance@v1
+      uses: actions/attest-build-provenance@v2
       with:
         subject-path: target/${{ matrix.sys.target }}/release/${{ matrix.crate.binary }}${{ matrix.sys.ext }}
 
@@ -144,7 +144,7 @@ jobs:
 
       - name: Build provenance for attestation (release only)
         if: github.event_name == 'release'
-        uses: actions/attest-build-provenance@v1
+        uses: actions/attest-build-provenance@v2
         with:
           subject-path: ${{ env.STELLAR_CLI_INSTALLER }}
 
