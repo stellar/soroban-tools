@@ -1,12 +1,12 @@
 name: RPC Tests
 on:
-  push:
-    branches: [main, release/**]
-  pull_request:
+    push:
+        branches: [main, release/**]
+    pull_request:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref_protected == 'true' && github.sha || github.ref }}
-  cancel-in-progress: true
+    group: ${{ github.workflow }}-${{ github.ref_protected == 'true' && github.sha || github.ref }}
+    cancel-in-progress: true
 
 jobs:
   test:
@@ -39,7 +39,7 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - run: rustup update
-      - run: sudo apt update && sudo apt install -y libdbus-1-dev
+      - run: sudo apt update && sudo apt install -y libudev-dev libdbus-1-dev
       - run: cargo build
       - run: rustup target add wasm32-unknown-unknown
       - run: make build-test-wasms

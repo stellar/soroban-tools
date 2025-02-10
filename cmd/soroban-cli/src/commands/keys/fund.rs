@@ -25,7 +25,7 @@ pub struct Cmd {
 impl Cmd {
     pub async fn run(&self, global_args: &global::Args) -> Result<(), Error> {
         let print = Print::new(global_args.quiet);
-        let addr = self.address.public_key()?;
+        let addr = self.address.public_key().await?;
         let network = self.network.get(&self.address.locator)?;
         network.fund_address(&addr).await?;
         print.checkln(format!(

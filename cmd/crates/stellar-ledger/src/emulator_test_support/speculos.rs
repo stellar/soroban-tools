@@ -1,4 +1,4 @@
-use std::{borrow::Cow, collections::HashMap, path::PathBuf};
+use std::{borrow::Cow, collections::HashMap, path::PathBuf, str::FromStr};
 use testcontainers::{
     core::{Mount, WaitFor},
     Image,
@@ -55,14 +55,54 @@ impl Speculos {
     }
 
     fn get_cmd(ledger_device_model: String) -> String {
-        let device_model = ledger_device_model.clone();
-        let container_elf_path = match device_model.as_str() {
-            "nanos" => format!("{DEFAULT_APP_PATH}/stellarNanoSApp.elf"),
-            "nanosp" => format!("{DEFAULT_APP_PATH}/stellarNanoSPApp.elf"),
-            "nanox" => format!("{DEFAULT_APP_PATH}/stellarNanoXApp.elf"),
-            _ => panic!("Unsupported device model"),
-        };
-        format!("/home/zondax/speculos/speculos.py --log-level speculos:DEBUG --color JADE_GREEN --display headless -s {TEST_SEED_PHRASE} -m {device_model}  {container_elf_path}")
+        let device_model: DeviceModel = ledger_device_model.parse().unwrap();
+        let container_elf_path = format!("{DEFAULT_APP_PATH}/{}", device_model.as_file());
+        format!(
+            "/home/zondax/speculos/speculos.py --log-level speculos:DEBUG --color JADE_GREEN \
+            --display headless \
+            -s {TEST_SEED_PHRASE} \
+            -m {device_model}  {container_elf_path}"
+        )
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum DeviceModel {
+    NanoS,
+    NanoSP,
+    NanoX,
+}
+
+impl FromStr for DeviceModel {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "nanos" => Ok(DeviceModel::NanoS),
+            "nanosp" => Ok(DeviceModel::NanoSP),
+            "nanox" => Ok(DeviceModel::NanoX),
+            _ => Err(format!("Unsupported device model: {}", s)),
+        }
+    }
+}
+
+impl std::fmt::Display for DeviceModel {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            DeviceModel::NanoS => write!(f, "nanos"),
+            DeviceModel::NanoSP => write!(f, "nanosp"),
+            DeviceModel::NanoX => write!(f, "nanox"),
+        }
+    }
+}
+
+impl DeviceModel {
+    pub fn as_file(&self) -> &str {
+        match self {
+            DeviceModel::NanoS => "stellarNanoSApp.elf",
+            DeviceModel::NanoSP => "stellarNanoSPApp.elf",
+            DeviceModel::NanoX => "stellarNanoXApp.elf",
+        }
     }
 }
 

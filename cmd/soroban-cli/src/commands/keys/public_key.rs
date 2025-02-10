@@ -26,15 +26,16 @@ pub struct Cmd {
 }
 
 impl Cmd {
-    pub fn run(&self) -> Result<(), Error> {
-        println!("{}", self.public_key()?);
+    pub async fn run(&self) -> Result<(), Error> {
+        println!("{}", self.public_key().await?);
         Ok(())
     }
 
-    pub fn public_key(&self) -> Result<stellar_strkey::ed25519::PublicKey, Error> {
+    pub async fn public_key(&self) -> Result<stellar_strkey::ed25519::PublicKey, Error> {
         let muxed = self
             .name
-            .resolve_muxed_account(&self.locator, self.hd_path)?;
+            .resolve_muxed_account(&self.locator, self.hd_path)
+            .await?;
         let bytes = match muxed {
             soroban_sdk::xdr::MuxedAccount::Ed25519(uint256) => uint256.0,
             soroban_sdk::xdr::MuxedAccount::MuxedEd25519(muxed_account) => muxed_account.ed25519.0,

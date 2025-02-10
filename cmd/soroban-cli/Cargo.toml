@@ -39,6 +39,7 @@ default = []
 version_lt_23 = []
 version_gte_23 = []
 opt = ["dep:wasm-opt"]
+emulator-tests = ["stellar-ledger/emulator-tests"]
 
 [dependencies]
 stellar-xdr = { workspace = true, features = ["cli"] }
@@ -51,6 +52,8 @@ soroban-ledger-snapshot = { workspace = true }
 stellar-strkey = { workspace = true }
 soroban-sdk = { workspace = true }
 soroban-rpc = { workspace = true }
+stellar-ledger = { workspace = true }
+
 clap = { workspace = true, features = [
     "derive",
     "env",

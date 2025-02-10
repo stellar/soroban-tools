@@ -24,6 +24,7 @@ stellar-strkey = { workspace = true }
 sep5 = { workspace = true }
 soroban-cli = { workspace = true }
 soroban-rpc = { workspace = true }
+stellar-ledger = { workspace = true }
 
 thiserror = "1.0.31"
 sha2 = "0.10.6"
@@ -32,6 +33,7 @@ assert_fs = "1.0.7"
 predicates = { workspace = true }
 fs_extra = "1.3.0"
 toml = { workspace = true }
+testcontainers = { workspace = true }
 home = "0.5.9"
 
 [dev-dependencies]
@@ -42,9 +44,11 @@ walkdir = "2.4.0"
 ulid.workspace = true
 ed25519-dalek = { workspace = true }
 hex = { workspace = true }
+test-case = "3.3.1"
 tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
 httpmock = { workspace = true }
 
 [features]
 it = []
+emulator-tests = ["stellar-ledger/emulator-tests"]

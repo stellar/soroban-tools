@@ -9,7 +9,7 @@ use soroban_test::{AssertExt, TestEnv};
 
 use crate::integration::{
     hello_world::invoke_hello_world,
-    util::{deploy_contract, DeployKind, HELLO_WORLD},
+    util::{deploy_contract, DeployOptions, HELLO_WORLD},
 };
 
 pub fn test_address(sandbox: &TestEnv) -> String {
@@ -85,7 +85,15 @@ async fn create_account() {
         .success();
     let test_account_after = client.get_account(&test).await.unwrap();
     assert!(test_account_after.balance < test_account.balance);
-    let id = deploy_contract(sandbox, HELLO_WORLD, DeployKind::Normal, Some("new")).await;
+    let id = deploy_contract(
+        sandbox,
+        HELLO_WORLD,
+        DeployOptions {
+            deployer: Some("new".to_string()),
+            ..Default::default()
+        },
+    )
+    .await;
     println!("{id}");
     invoke_hello_world(sandbox, &id);
 }
@@ -117,7 +125,15 @@ async fn create_account_with_alias() {
         .success();
     let test_account_after = client.get_account(&test).await.unwrap();
     assert!(test_account_after.balance < test_account.balance);
-    let id = deploy_contract(sandbox, HELLO_WORLD, DeployKind::Normal, Some("new")).await;
+    let id = deploy_contract(
+        sandbox,
+        HELLO_WORLD,
+        DeployOptions {
+            deployer: Some("new".to_string()),
+            ..Default::default()
+        },
+    )
+    .await;
     println!("{id}");
     invoke_hello_world(sandbox, &id);
 }

@@ -36,6 +36,7 @@ use soroban_cli::{
 };
 
 mod wasm;
+
 pub use wasm::Wasm;
 
 pub const TEST_ACCOUNT: &str = "test";
@@ -299,9 +300,10 @@ impl TestEnv {
     }
 
     /// Returns the public key corresponding to the test keys's `hd_path`
-    pub fn test_address(&self, hd_path: usize) -> String {
+    pub async fn test_address(&self, hd_path: usize) -> String {
         self.cmd::<keys::public_key::Cmd>(&format!("--hd-path={hd_path}"))
             .public_key()
+            .await
             .unwrap()
             .to_string()
     }
@@ -329,6 +331,21 @@ impl TestEnv {
 
     pub fn client(&self) -> soroban_rpc::Client {
         self.network.rpc_client().unwrap()
+    }
+
+    #[cfg(feature = "emulator-tests")]
+    pub async fn speculos_container(
+        ledger_device_model: &str,
+    ) -> testcontainers::ContainerAsync<stellar_ledger::emulator_test_support::speculos::Speculos>
+    {
+        use stellar_ledger::emulator_test_support::{
+            enable_hash_signing, get_container, wait_for_emulator_start_text,
+        };
+        let container = get_container(ledger_device_model).await;
+        let ui_host_port: u16 = container.get_host_port_ipv4(5000).await.unwrap();
+        wait_for_emulator_start_text(ui_host_port).await;
+        enable_hash_signing(ui_host_port).await;
+        container
     }
 }
 

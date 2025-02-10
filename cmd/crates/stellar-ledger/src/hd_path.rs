@@ -4,6 +4,7 @@ use crate::Error;
 pub struct HdPath(pub u32);
 
 impl HdPath {
+    #[must_use]
     pub fn depth(&self) -> u8 {
         let path: slip10::BIP32Path = self.into();
         path.depth()
@@ -23,6 +24,9 @@ impl From<&u32> for HdPath {
 }
 
 impl HdPath {
+    /// # Errors
+    ///
+    /// Could fail to convert the path to bytes
     pub fn to_vec(&self) -> Result<Vec<u8>, Error> {
         hd_path_to_bytes(&self.into())
     }

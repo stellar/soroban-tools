@@ -23,7 +23,7 @@ pub enum LedgerZemuError {
     InnerError,
 }
 
-pub struct EmulatorHttpTransport {
+pub struct Emulator {
     url: String,
 }
 
@@ -39,8 +39,9 @@ struct ZemuResponse {
     error: Option<String>,
 }
 
-impl EmulatorHttpTransport {
+impl Emulator {
     #[allow(dead_code)] //this is being used in tests only
+    #[must_use]
     pub fn new(host: &str, port: u16) -> Self {
         Self {
             url: format!("http://{host}:{port}"),
@@ -49,7 +50,7 @@ impl EmulatorHttpTransport {
 }
 
 #[async_trait]
-impl Exchange for EmulatorHttpTransport {
+impl Exchange for Emulator {
     type Error = LedgerZemuError;
     type AnswerType = Vec<u8>;
 
@@ -72,7 +73,7 @@ impl Exchange for EmulatorHttpTransport {
         let resp: Response = HttpClient::new()
             .post(&self.url)
             .headers(headers)
-            .timeout(Duration::from_secs(25))
+            .timeout(Duration::from_secs(60))
             .json(&request)
             .send()
             .await

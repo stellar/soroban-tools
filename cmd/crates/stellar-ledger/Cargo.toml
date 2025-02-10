@@ -16,7 +16,6 @@ rust-version.workspace = true
 publish = false
 
 [dependencies]
-soroban-spec = { workspace = true }
 thiserror = "1.0.32"
 serde = "1.0.82"
 serde_derive = "1.0.82"
@@ -26,7 +25,6 @@ ed25519-dalek = { workspace = true }
 stellar-strkey = { workspace = true }
 ledger-transport-hid = "0.10.0"
 ledger-transport = "0.10.0"
-sep5.workspace = true
 slip10 = { package = "slipped10", version = "0.4.6" }
 tracing = { workspace = true }
 hex.workspace = true
@@ -35,10 +33,9 @@ bollard = { workspace = true }
 home = "0.5.9"
 tokio = { version = "1", features = ["full"] }
 reqwest = { workspace = true, features = ["json"] }
-soroban-rpc.workspace = true
-phf = { version = "0.11.2", features = ["macros"] }
-futures = "0.3.30"
+phf = { version = "0.11.2", features = ["macros"], optional = true }
 async-trait = { workspace = true }
+testcontainers = { workspace = true, optional = true }
 
 [dependencies.stellar-xdr]
 workspace = true
@@ -46,15 +43,16 @@ features = ["curr", "std", "serde"]
 
 [dev-dependencies]
 env_logger = "0.11.3"
-futures = "0.3.30"
 log = "0.4.21"
 once_cell = "1.19.0"
 pretty_assertions = "1.2.1"
 serial_test = "3.0.0"
 httpmock = { workspace = true }
 test-case = "3.3.1"
-testcontainers = "0.20.1"
+
 
 
 [features]
-emulator-tests = []
+default = ["http-transport"]
+emulator-tests = ["dep:testcontainers", "http-transport", "dep:phf"]
+http-transport = []

@@ -53,7 +53,7 @@ impl Cmd {
         match self {
             Cmd::Hash(cmd) => cmd.run(global_args)?,
             Cmd::New(cmd) => cmd.run(global_args).await?,
-            Cmd::Operation(cmd) => cmd.run(global_args)?,
+            Cmd::Operation(cmd) => cmd.run(global_args).await?,
             Cmd::Send(cmd) => cmd.run(global_args).await?,
             Cmd::Sign(cmd) => cmd.run(global_args).await?,
             Cmd::Simulate(cmd) => cmd.run(global_args).await?,

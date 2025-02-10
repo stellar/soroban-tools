@@ -1,28 +1,31 @@
 name: Ledger Emulator Tests
 
 on:
-  push:
-    branches: [main, release/**]
-  pull_request:
+    push:
+        branches: [main, release/**]
+    pull_request:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref_protected == 'true' && github.sha || github.ref }}
-  cancel-in-progress: true
+    group: ${{ github.workflow }}-${{ github.ref_protected == 'true' && github.sha || github.ref }}
+    cancel-in-progress: true
 
 defaults:
-  run:
-    shell: bash
+    run:
+        shell: bash
 
 jobs:
-  emulator-tests:
-    runs-on: ubuntu-latest
-    env:
-      CI_TESTS: true
-    steps:
-    - uses: actions/checkout@v4
-    - uses: stellar/actions/rust-cache@main
-    - name: install libudev-dev
-      run: |
-        sudo apt update && sudo apt install -y libudev-dev
-    - run: |
-        cargo test --manifest-path cmd/crates/stellar-ledger/Cargo.toml --features "emulator-tests" -- --nocapture
+    emulator-tests:
+        runs-on: ubuntu-latest
+        env:
+            CI_TESTS: true
+        steps:
+            - uses: actions/checkout@v4
+            - uses: stellar/actions/rust-cache@main
+            - name: install libudev-dev & libdbus-1-dev
+              run: |
+                  sudo apt update && sudo apt install -y libudev-dev libdbus-1-dev
+            - run: |
+                  cargo test --manifest-path cmd/crates/stellar-ledger/Cargo.toml --features "emulator-tests" -- --nocapture
+            - run: cargo build --features emulator-tests
+            - run: |
+                  cargo test --features emulator-tests --package soroban-test --test it -- emulator

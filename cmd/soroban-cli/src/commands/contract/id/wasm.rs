@@ -29,12 +29,12 @@ pub enum Error {
     OnlyEd25519AccountsAllowed,
 }
 impl Cmd {
-    pub fn run(&self) -> Result<(), Error> {
+    pub async fn run(&self) -> Result<(), Error> {
         let salt: [u8; 32] = soroban_spec_tools::utils::padded_hex_from_str(&self.salt, 32)
             .map_err(|_| Error::CannotParseSalt(self.salt.clone()))?
             .try_into()
             .map_err(|_| Error::CannotParseSalt(self.salt.clone()))?;
-        let source_account = match self.config.source_account()? {
+        let source_account = match self.config.source_account().await? {
             xdr::MuxedAccount::Ed25519(uint256) => stellar_strkey::ed25519::PublicKey(uint256.0),
             xdr::MuxedAccount::MuxedEd25519(_) => return Err(Error::OnlyEd25519AccountsAllowed),
         };

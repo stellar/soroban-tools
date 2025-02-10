@@ -128,7 +128,9 @@ impl NetworkRunnable for Cmd {
         client
             .verify_network_passphrase(Some(&network.network_passphrase))
             .await?;
-        let source_account = config.source_account()?;
+
+        let source_account = config.source_account().await?;
+
         // Get the account sequence number
         // TODO: use symbols for the method names (both here and in serve)
         let account_details = client

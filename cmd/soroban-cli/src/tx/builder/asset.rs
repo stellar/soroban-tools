@@ -40,7 +40,9 @@ impl Asset {
     pub fn resolve(&self, locator: &locator::Args) -> Result<xdr::Asset, Error> {
         Ok(match self {
             Asset::Asset(code, issuer) => {
-                let issuer = issuer.resolve_muxed_account(locator, None)?.account_id();
+                let issuer = issuer
+                    .resolve_muxed_account_sync(locator, None)?
+                    .account_id();
                 match code.clone() {
                     AssetCode::CreditAlphanum4(asset_code) => {
                         xdr::Asset::CreditAlphanum4(AlphaNum4 { asset_code, issuer })

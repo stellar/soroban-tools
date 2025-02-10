@@ -220,7 +220,7 @@ impl Cmd {
             .address
             .iter()
             .cloned()
-            .filter_map(|a| self.resolve_address(&a, network_passphrase))
+            .filter_map(|a| self.resolve_address_sync(&a, network_passphrase))
             .partition_map(|a| a);
 
         let mut current = SearchInputs {
@@ -402,29 +402,58 @@ impl Cmd {
             .ok_or(Error::ArchiveUrlNotConfigured)
     }
 
-    fn resolve_address(
+    #[allow(dead_code)]
+    async fn resolve_address(
         &self,
         address: &str,
         network_passphrase: &str,
     ) -> Option<Either<AccountId, ScAddress>> {
-        self.resolve_contract(address, network_passphrase)
-            .map(Either::Right)
-            .or_else(|| self.resolve_account(address).map(Either::Left))
+        if let Some(contract) = self.resolve_contract(address, network_passphrase) {
+            Some(Either::Right(contract))
+        } else {
+            self.resolve_account(address).await.map(Either::Left)
+        }
+    }
+
+    fn resolve_address_sync(
+        &self,
+        address: &str,
+        network_passphrase: &str,
+    ) -> Option<Either<AccountId, ScAddress>> {
+        if let Some(contract) = self.resolve_contract(address, network_passphrase) {
+            Some(Either::Right(contract))
+        } else {
+            self.resolve_account_sync(address).map(Either::Left)
+        }
     }
 
     // Resolve an account address to an account id. The address can be a
     // G-address or a key name (as in `stellar keys address NAME`).
-    fn resolve_account(&self, address: &str) -> Option<AccountId> {
-        let address: UnresolvedMuxedAccount = address.parse().ok()?;
 
+    async fn resolve_account(&self, address: &str) -> Option<AccountId> {
+        let address: UnresolvedMuxedAccount = address.parse().ok()?;
         Some(AccountId(xdr::PublicKey::PublicKeyTypeEd25519(
-            match address.resolve_muxed_account(&self.locator, None).ok()? {
+            match address
+                .resolve_muxed_account(&self.locator, None)
+                .await
+                .ok()?
+            {
                 xdr::MuxedAccount::Ed25519(uint256) => uint256,
                 xdr::MuxedAccount::MuxedEd25519(xdr::MuxedAccountMed25519 { ed25519, .. }) => {
                     ed25519
                 }
             },
         )))
+    }
+
+    // Resolve an account address to an account id. The address can be a
+    // G-address or a key name (as in `stellar keys address NAME`).
+    fn resolve_account_sync(&self, address: &str) -> Option<AccountId> {
+        let address: UnresolvedMuxedAccount = address.parse().ok()?;
+        let muxed_account = address
+            .resolve_muxed_account_sync(&self.locator, None)
+            .ok()?;
+        Some(muxed_account.account_id())
     }
     // Resolve a contract address to a contract id. The contract can be a
     // C-address or a contract alias.

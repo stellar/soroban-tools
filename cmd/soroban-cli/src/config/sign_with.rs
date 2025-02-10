@@ -1,6 +1,6 @@
 use crate::{
     print::Print,
-    signer::{self, Signer, SignerKind},
+    signer::{self, ledger, Signer, SignerKind},
     xdr::{self, TransactionEnvelope},
 };
 use clap::arg;
@@ -38,7 +38,7 @@ pub struct Args {
     #[arg(long, env = "STELLAR_SIGN_WITH_KEY")]
     pub sign_with_key: Option<String>,
 
-    #[arg(long, requires = "sign_with_key")]
+    #[arg(long, conflicts_with = "sign_with_lab")]
     /// If using a seed phrase to sign, sets which hierarchical deterministic path to use, e.g. `m/44'/148'/{hd_path}`. Example: `--hd-path 1`. Default: `0`
     pub hd_path: Option<usize>,
 
@@ -46,10 +46,19 @@ pub struct Args {
     /// Sign with https://lab.stellar.org
     #[arg(long, conflicts_with = "sign_with_key", env = "STELLAR_SIGN_WITH_LAB")]
     pub sign_with_lab: bool,
+
+    /// Sign with a ledger wallet
+    #[arg(
+        long,
+        conflicts_with = "sign_with_key",
+        conflicts_with = "sign_with_lab",
+        env = "STELLAR_SIGN_WITH_LEDGER"
+    )]
+    pub sign_with_ledger: bool,
 }
 
 impl Args {
-    pub fn sign_tx_env(
+    pub async fn sign_tx_env(
         &self,
         tx: &TransactionEnvelope,
         locator: &locator::Args,
@@ -62,11 +71,23 @@ impl Args {
                 kind: SignerKind::Lab,
                 print,
             }
+        } else if self.sign_with_ledger {
+            let ledger = ledger(
+                self.hd_path
+                    .unwrap_or_default()
+                    .try_into()
+                    .unwrap_or_default(),
+            )
+            .await?;
+            Signer {
+                kind: SignerKind::Ledger(ledger),
+                print,
+            }
         } else {
             let key_or_name = self.sign_with_key.as_deref().ok_or(Error::NoSignWithKey)?;
             let secret = locator.get_secret_key(key_or_name)?;
-            secret.signer(self.hd_path, print)?
+            secret.signer(self.hd_path, print).await?
         };
-        Ok(signer.sign_tx_env(tx, network)?)
+        Ok(signer.sign_tx_env(tx, network).await?)
     }
 }

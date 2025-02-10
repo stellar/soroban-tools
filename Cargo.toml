@@ -66,6 +66,10 @@ version = "=22.0.4"
 package = "stellar-rpc-client"
 version = "=22.0.0"
 
+[workspace.dependencies.stellar-ledger]
+version = "=22.2.0"
+path = "cmd/crates/stellar-ledger"
+
 # Dependencies from elsewhere shared by crates:
 [workspace.dependencies]
 stellar-strkey = "0.0.11"
@@ -105,7 +109,9 @@ walkdir = "2.5.0"
 toml_edit = "0.22.20"
 toml = "0.8.19"
 reqwest = "0.12.7"
+# testing
 predicates = "3.1.2"
+testcontainers = { version = "0.20.1" }
 httpmock = "0.7.0"
 
 [profile.test-wasms]
